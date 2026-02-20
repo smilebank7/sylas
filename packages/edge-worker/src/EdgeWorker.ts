@@ -2727,8 +2727,24 @@ ${taskInstructions}
 		let finalProcedure: ProcedureDefinition;
 		let finalClassification: RequestClassification;
 
-		// If labels indicate a specific procedure, use that instead of AI routing
-		if (hasDebuggerLabel) {
+		// Smart runner override: OpenCode with oh-my-opencode gets full-delegation
+		// (bypasses AI routing and label-based procedure selection entirely)
+		const earlyRunnerSelection = this.determineRunnerSelection(
+			labels,
+			fullIssue.description || undefined,
+		);
+		if (earlyRunnerSelection.runnerType === "opencode") {
+			const fullDelegationProcedure =
+				this.procedureAnalyzer.getProcedure("full-delegation");
+			if (!fullDelegationProcedure) {
+				throw new Error("full-delegation procedure not found in registry");
+			}
+			finalProcedure = fullDelegationProcedure;
+			finalClassification = "code"; // Default classification; the runner handles everything
+			log.info(
+				`Using full-delegation procedure for OpenCode runner (bypassing AI routing)`,
+			);
+		} else if (hasDebuggerLabel) {
 			const debuggerProcedure =
 				this.procedureAnalyzer.getProcedure("debugger-full");
 			if (!debuggerProcedure) {

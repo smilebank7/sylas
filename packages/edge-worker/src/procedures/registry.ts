@@ -131,6 +131,12 @@ export const SUBROUTINES = {
 		suppressThoughtPosting: true,
 		disallowAllTools: true,
 	},
+	fullDelegation: {
+		name: "full-delegation",
+		promptPath: "subroutines/full-delegation.md",
+		description:
+			"Full delegation to a smart runner — coding, testing, committing, PR creation, and summary in a single session",
+	},
 } as const;
 
 /**
@@ -211,6 +217,13 @@ export const PROCEDURES: Record<string, ProcedureDefinition> = {
 		description:
 			"Release workflow that invokes project release skill or asks user for release info",
 		subroutines: [SUBROUTINES.releaseExecution, SUBROUTINES.releaseSummary],
+	},
+
+	"full-delegation": {
+		name: "full-delegation",
+		description:
+			"Single-session full delegation for smart runners (OpenCode + oh-my-opencode) — the runner handles the entire workflow autonomously",
+		subroutines: [SUBROUTINES.fullDelegation],
 	},
 };
 
