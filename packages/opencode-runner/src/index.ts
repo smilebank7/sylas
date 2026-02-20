@@ -109,16 +109,24 @@ export {
 // ============================================================================
 
 // Type exports
-export type { AccumulatedMessage, ProcessableEvent } from "./adapters.js";
-// Main adapter function
-// Part conversion functions
-// Message conversion functions
-// Event type guards
-// Helper functions
+export type {
+	AccumulatedMessage,
+	CLIEvent,
+	CLIStepFinishEvent,
+	CLIStepStartEvent,
+	CLITextEvent,
+	CLIToolUseEvent,
+	ProcessableEvent,
+} from "./adapters.js";
 export {
 	createUserMessage,
 	errorEventToSDKMessage,
 	extractSessionId,
+	isCLIEvent,
+	isCLIStepFinish,
+	isCLIStepStart,
+	isCLIText,
+	isCLIToolUse,
 	isMessagePartUpdated,
 	isMessageUpdated,
 	isSessionError,

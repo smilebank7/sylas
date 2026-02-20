@@ -46,6 +46,9 @@ interface V2CyrusAgentSession {
 	};
 	claudeSessionId?: string;
 	geminiSessionId?: string;
+	codexSessionId?: string;
+	cursorSessionId?: string;
+	openCodeSessionId?: string;
 	metadata?: Record<string, unknown>;
 }
 
@@ -211,11 +214,8 @@ export class PersistenceManager {
 		};
 
 		return {
-			// New field: rename linearAgentActivitySessionId to id
 			id: v2Session.linearAgentActivitySessionId,
-			// New field: store the original Linear session ID as externalSessionId
 			externalSessionId: v2Session.linearAgentActivitySessionId,
-			// Preserved fields
 			type: v2Session.type,
 			status: v2Session.status,
 			context: v2Session.context,
@@ -224,12 +224,12 @@ export class PersistenceManager {
 			workspace: v2Session.workspace,
 			claudeSessionId: v2Session.claudeSessionId,
 			geminiSessionId: v2Session.geminiSessionId,
+			codexSessionId: v2Session.codexSessionId,
+			cursorSessionId: v2Session.cursorSessionId,
+			openCodeSessionId: v2Session.openCodeSessionId,
 			metadata: v2Session.metadata,
-			// New field: structured issue context
 			issueContext,
-			// Kept for backwards compatibility (marked as deprecated in interface)
 			issueId: v2Session.issueId,
-			// Now optional
 			issue: v2Session.issue,
 		} as SerializedCyrusAgentSession;
 	}

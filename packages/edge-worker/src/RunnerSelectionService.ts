@@ -40,7 +40,11 @@ export class RunnerSelectionService {
 			return "gpt-5";
 		}
 		if (runnerType === "opencode") {
-			return this.config.defaultModel || "anthropic/claude-sonnet-4-20250514";
+			return (
+				this.config.openCodeDefaultModel ||
+				this.config.defaultModel ||
+				"anthropic/claude-sonnet-4-20250514"
+			);
 		}
 		return this.config.codexDefaultModel || "gpt-5.3-codex";
 	}
@@ -66,7 +70,11 @@ export class RunnerSelectionService {
 			return "gpt-5";
 		}
 		if (runnerType === "opencode") {
-			return this.config.defaultFallbackModel || "anthropic/claude-sonnet-4-20250514";
+			return (
+				this.config.openCodeDefaultModel ||
+				this.config.defaultFallbackModel ||
+				"anthropic/claude-sonnet-4-20250514"
+			);
 		}
 		return "gpt-5";
 	}
@@ -273,7 +281,8 @@ export class RunnerSelectionService {
 				? "opencode"
 				: agentFromDescription === "cursor"
 					? "cursor"
-					: agentFromDescription === "codex" || agentFromDescription === "openai"
+					: agentFromDescription === "codex" ||
+							agentFromDescription === "openai"
 						? "codex"
 						: agentFromDescription === "gemini"
 							? "gemini"

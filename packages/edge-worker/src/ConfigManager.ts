@@ -210,7 +210,8 @@ export class ConfigManager extends EventEmitter {
 					parsedConfig.geminiDefaultModel || this.config.geminiDefaultModel,
 				codexDefaultModel:
 					parsedConfig.codexDefaultModel || this.config.codexDefaultModel,
-				// Preserve legacy fields while rolling out new config keys.
+				openCodeDefaultModel:
+					parsedConfig.openCodeDefaultModel || this.config.openCodeDefaultModel,
 				defaultModel: parsedConfig.defaultModel || this.config.defaultModel,
 				defaultFallbackModel:
 					parsedConfig.defaultFallbackModel || this.config.defaultFallbackModel,

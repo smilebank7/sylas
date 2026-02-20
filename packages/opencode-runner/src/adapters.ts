@@ -68,6 +68,109 @@ export type ProcessableEvent =
 	| EventSessionStatus;
 
 // ============================================================================
+// CLI Event Types (from `opencode run --format json`)
+// ============================================================================
+
+/**
+ * CLI events are structurally different from SDK SSE events:
+ *   SDK:  { type: "message.part.updated", properties: { part: {...} } }
+ *   CLI:  { type: "text", sessionID: "ses_...", timestamp: 123, ... }
+ *
+ * The CLI outputs newline-delimited JSON with these event types:
+ *   step_start, text, tool_use, step_finish
+ */
+
+interface CLIEventBase {
+	type: string;
+	timestamp: number;
+	sessionID: string;
+}
+
+export interface CLIStepStartEvent extends CLIEventBase {
+	type: "step_start";
+	part?: {
+		id?: string;
+		sessionID?: string;
+		messageID?: string;
+	};
+}
+
+export interface CLITextEvent extends CLIEventBase {
+	type: "text";
+	content?: string;
+	part?: {
+		id?: string;
+		sessionID?: string;
+		messageID?: string;
+		type?: string;
+		text?: string;
+	};
+}
+
+export interface CLIToolUseEvent extends CLIEventBase {
+	type: "tool_use";
+	part?: {
+		id?: string;
+		sessionID?: string;
+		messageID?: string;
+		type?: string;
+		tool?: string;
+		callID?: string;
+		state?: {
+			status?: string;
+			input?: Record<string, unknown>;
+			output?: string;
+			error?: string;
+		};
+	};
+}
+
+export interface CLIStepFinishEvent extends CLIEventBase {
+	type: "step_finish";
+	part?: {
+		id?: string;
+		sessionID?: string;
+		messageID?: string;
+	};
+}
+
+export type CLIEvent =
+	| CLIStepStartEvent
+	| CLITextEvent
+	| CLIToolUseEvent
+	| CLIStepFinishEvent;
+
+// ============================================================================
+// CLI Event Type Guards
+// ============================================================================
+
+export function isCLIEvent(event: unknown): event is CLIEvent {
+	if (typeof event !== "object" || event === null) return false;
+	const e = event as Record<string, unknown>;
+	return (
+		typeof e.sessionID === "string" &&
+		typeof e.type === "string" &&
+		!(e.type as string).includes(".")
+	);
+}
+
+export function isCLIStepStart(event: CLIEvent): event is CLIStepStartEvent {
+	return event.type === "step_start";
+}
+
+export function isCLIText(event: CLIEvent): event is CLITextEvent {
+	return event.type === "text";
+}
+
+export function isCLIToolUse(event: CLIEvent): event is CLIToolUseEvent {
+	return event.type === "tool_use";
+}
+
+export function isCLIStepFinish(event: CLIEvent): event is CLIStepFinishEvent {
+	return event.type === "step_finish";
+}
+
+// ============================================================================
 // Helper Functions
 // ============================================================================
 
@@ -487,6 +590,86 @@ export function errorEventToSDKMessage(
 }
 
 // ============================================================================
+// CLI Event Conversion Functions
+// ============================================================================
+
+function cliTextToSDKMessage(
+	event: CLITextEvent,
+	sessionId: string | null,
+): SDKAssistantMessage | null {
+	const text = event.content || event.part?.text || "";
+	if (!text) return null;
+
+	return {
+		type: "assistant",
+		message: createBetaMessage(
+			[{ type: "text", text }],
+			event.part?.messageID || crypto.randomUUID(),
+		),
+		parent_tool_use_id: null,
+		uuid: crypto.randomUUID(),
+		session_id: sessionId || "pending",
+	};
+}
+
+function cliToolUseToSDKMessage(
+	event: CLIToolUseEvent,
+	sessionId: string | null,
+): SDKMessage | null {
+	const part = event.part;
+	if (!part) return null;
+
+	const status = part.state?.status || "running";
+	const toolId = part.callID || part.id || crypto.randomUUID();
+
+	if (status === "running" || status === "pending") {
+		const assistantMessage: SDKAssistantMessage = {
+			type: "assistant",
+			message: createBetaMessage(
+				[
+					{
+						type: "tool_use",
+						id: toolId,
+						name: part.tool || "unknown_tool",
+						input: part.state?.input || {},
+					},
+				],
+				part.messageID || crypto.randomUUID(),
+			),
+			parent_tool_use_id: null,
+			uuid: crypto.randomUUID(),
+			session_id: sessionId || "pending",
+		};
+		return assistantMessage;
+	}
+
+	if (status === "completed" || status === "error") {
+		const toolResultMessage: SDKUserMessage = {
+			type: "user",
+			message: {
+				role: "user",
+				content: [
+					{
+						type: "tool_result",
+						tool_use_id: toolId,
+						content:
+							status === "completed"
+								? part.state?.output || ""
+								: part.state?.error || "Tool error",
+						is_error: status === "error",
+					},
+				],
+			},
+			parent_tool_use_id: null,
+			session_id: sessionId || "pending",
+		};
+		return toolResultMessage;
+	}
+
+	return null;
+}
+
+// ============================================================================
 // Main Adapter Function
 // ============================================================================
 
@@ -512,27 +695,39 @@ export function openCodeEventToSDKMessage(
 	lastAssistantMessage?: SDKAssistantMessage | null,
 	lastAssistantInfo?: AssistantMessage | null,
 ): SDKMessage | null {
+	// CLI format: events from `opencode run --format json`
+	// Detected by root-level sessionID + non-dotted type string
+	if (isCLIEvent(event as unknown)) {
+		const cliEvent = event as unknown as CLIEvent;
+
+		if (isCLIText(cliEvent)) {
+			return cliTextToSDKMessage(cliEvent, sessionId);
+		}
+		if (isCLIToolUse(cliEvent)) {
+			return cliToolUseToSDKMessage(cliEvent, sessionId);
+		}
+		// step_start / step_finish: no SDK message needed
+		// Result is synthesized at process exit in OpenCodeRunner
+		return null;
+	}
+
+	// SDK SSE format: events from OpenCode SDK server
 	if (isMessagePartUpdated(event)) {
 		return partEventToSDKMessage(event, sessionId);
 	}
 
 	if (isMessageUpdated(event)) {
-		// Check if this is a completion signal
 		const message = event.properties.info;
 		if (message.role === "assistant") {
 			const assistantMsg = message as AssistantMessage;
-			// If the message has finished, we might want to emit a result
-			// But we defer result emission to session.idle for consistency
 			if (assistantMsg.finish === "stop" && assistantMsg.time?.completed) {
-				// Store this for result synthesis later
-				// Return null here - result will be synthesized on session.idle
+				// Defer result to session.idle
 			}
 		}
 		return messageEventToSDKMessage(event, sessionId);
 	}
 
 	if (isSessionIdle(event)) {
-		// Session has completed - synthesize result message
 		return synthesizeResultMessage(
 			sessionId,
 			lastAssistantMessage,
@@ -544,7 +739,6 @@ export function openCodeEventToSDKMessage(
 		return errorEventToSDKMessage(event, sessionId);
 	}
 
-	// Other event types (session.status, file.edited, etc.) - not mapped
 	return null;
 }
 
@@ -555,6 +749,13 @@ export function openCodeEventToSDKMessage(
  * @returns Session ID if available, null otherwise
  */
 export function extractSessionId(event: Event): string | null {
+	// CLI format: all CLI events have sessionID at root level
+	const anyEvent = event as unknown as Record<string, unknown>;
+	if (typeof anyEvent.sessionID === "string" && anyEvent.sessionID) {
+		return anyEvent.sessionID;
+	}
+
+	// SDK SSE format
 	if (isMessagePartUpdated(event)) {
 		return event.properties.part.sessionID;
 	}

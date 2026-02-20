@@ -22,7 +22,7 @@ import type {
 	SubroutineDefinition,
 } from "./types.js";
 
-export type SimpleRunnerType = "claude" | "gemini";
+export type SimpleRunnerType = "claude" | "gemini" | "opencode";
 
 export interface ProcedureAnalyzerConfig {
 	cyrusHome: string;
@@ -289,18 +289,32 @@ IMPORTANT: Respond with ONLY the classification word, nothing else.`;
 		const currentSubroutine = this.getCurrentSubroutine(session);
 
 		if (currentSubroutine) {
-			// Determine which type of session ID this is
-			const isCodexSession = session.codexSessionId !== undefined;
+			const isOpenCodeSession = session.openCodeSessionId !== undefined;
+			const isCursorSession =
+				!isOpenCodeSession && session.cursorSessionId !== undefined;
+			const isCodexSession =
+				!isOpenCodeSession &&
+				!isCursorSession &&
+				session.codexSessionId !== undefined;
 			const isGeminiSession =
-				!isCodexSession && session.geminiSessionId !== undefined;
+				!isOpenCodeSession &&
+				!isCursorSession &&
+				!isCodexSession &&
+				session.geminiSessionId !== undefined;
+			const isClaudeSession =
+				!isOpenCodeSession &&
+				!isCursorSession &&
+				!isCodexSession &&
+				!isGeminiSession;
 
-			// Record completion with the appropriate session ID
 			procedureMetadata.subroutineHistory.push({
 				subroutine: currentSubroutine.name,
 				completedAt: Date.now(),
-				claudeSessionId: isGeminiSession || isCodexSession ? null : sessionId,
+				claudeSessionId: isClaudeSession ? sessionId : null,
 				geminiSessionId: isGeminiSession ? sessionId : null,
 				codexSessionId: isCodexSession ? sessionId : null,
+				cursorSessionId: isCursorSession ? sessionId : null,
+				openCodeSessionId: isOpenCodeSession ? sessionId : null,
 				...(result !== undefined && { result }),
 			});
 		}

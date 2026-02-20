@@ -196,6 +196,9 @@ export const EdgeConfigSchema = z.object({
 	/** Default Codex model to use across all repositories (e.g., "gpt-5.3-codex", "gpt-5.2-codex") */
 	codexDefaultModel: z.string().optional(),
 
+	/** Default OpenCode model to use across all repositories (e.g., "anthropic/claude-sonnet-4-20250514") */
+	openCodeDefaultModel: z.string().optional(),
+
 	/**
 	 * @deprecated Use claudeDefaultModel instead.
 	 * Legacy field retained for backwards compatibility and migrated on load.
