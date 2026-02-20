@@ -1,0 +1,48 @@
+# =============================================================================
+# Cyrus self-hosted deployment with Traefik reverse proxy
+# =============================================================================
+# Usage:
+#   1. Copy .env.example to .env and fill in secrets
+#   2. docker compose build --no-cache
+#   3. docker compose up -d
+#
+# To register additional AI providers (e.g. OpenAI ChatGPT Plus):
+#   docker exec -it cyrus opencode auth login
+# =============================================================================
+
+networks:
+  traefik-public:
+    external: true
+
+services:
+  cyrus:
+    build:
+      context: ..            # repo root
+      dockerfile: deploy/Dockerfile
+    container_name: cyrus
+    restart: unless-stopped
+    command: ["cyrus", "start"]
+    env_file:
+      - .env
+    volumes:
+      - cyrus-data:/root/.cyrus
+      - cyrus-repos:/root/.cyrus/repos
+      - opencode-data:/root/.local/share/opencode
+      - ./entrypoint.sh:/entrypoint.sh:ro
+    networks:
+      - traefik-public
+    labels:
+      - traefik.enable=true
+      - "traefik.http.routers.cyrus.rule=Host(`${CYRUS_DOMAIN:-cyrus.example.com}`)"
+      - traefik.http.routers.cyrus.entrypoints=websecure
+      - traefik.http.routers.cyrus.tls.certresolver=myresolver
+      - traefik.http.services.cyrus.loadbalancer.server.port=3456
+      - "traefik.http.routers.cyrus-http.rule=Host(`${CYRUS_DOMAIN:-cyrus.example.com}`)"
+      - traefik.http.routers.cyrus-http.entrypoints=web
+      - traefik.http.middlewares.cyrus-redirect.redirectscheme.scheme=https
+      - traefik.http.routers.cyrus-http.middlewares=cyrus-redirect
+
+volumes:
+  cyrus-data:
+  cyrus-repos:
+  opencode-data:
