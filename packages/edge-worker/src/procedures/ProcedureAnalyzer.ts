@@ -6,13 +6,13 @@
  */
 
 import {
-	type CyrusAgentSession,
 	createLogger,
 	type ILogger,
 	type ISimpleAgentRunner,
-} from "cyrus-core";
-import { SimpleGeminiRunner } from "cyrus-gemini-runner";
-import { SimpleClaudeRunner } from "cyrus-simple-agent-runner";
+	type SylasAgentSession,
+} from "sylas-core";
+import { SimpleGeminiRunner } from "sylas-gemini-runner";
+import { SimpleClaudeRunner } from "sylas-simple-agent-runner";
 import { getProcedureForClassification, PROCEDURES } from "./registry.js";
 import type {
 	ProcedureAnalysisDecision,
@@ -25,7 +25,7 @@ import type {
 export type SimpleRunnerType = "claude" | "gemini" | "opencode";
 
 export interface ProcedureAnalyzerConfig {
-	cyrusHome: string;
+	sylasHome: string;
 	model?: string;
 	timeoutMs?: number;
 	runnerType?: SimpleRunnerType; // Default: "gemini"
@@ -63,7 +63,7 @@ export class ProcedureAnalyzer {
 				"user-testing",
 				"release",
 			] as const,
-			cyrusHome: config.cyrusHome,
+			sylasHome: config.sylasHome,
 			model: config.model || defaultModel,
 			fallbackModel: defaultFallbackModel,
 			systemPrompt: this.buildAnalysisSystemPrompt(),
@@ -194,7 +194,7 @@ IMPORTANT: Respond with ONLY the classification word, nothing else.`;
 	 * Get the next subroutine for a session
 	 * Returns null if procedure is complete
 	 */
-	getNextSubroutine(session: CyrusAgentSession): SubroutineDefinition | null {
+	getNextSubroutine(session: SylasAgentSession): SubroutineDefinition | null {
 		const procedureMetadata = session.metadata?.procedure as
 			| ProcedureMetadata
 			| undefined;
@@ -227,7 +227,7 @@ IMPORTANT: Respond with ONLY the classification word, nothing else.`;
 	 * Get the current subroutine for a session
 	 */
 	getCurrentSubroutine(
-		session: CyrusAgentSession,
+		session: SylasAgentSession,
 	): SubroutineDefinition | null {
 		const procedureMetadata = session.metadata?.procedure as
 			| ProcedureMetadata
@@ -256,7 +256,7 @@ IMPORTANT: Respond with ONLY the classification word, nothing else.`;
 	 * Initialize procedure metadata for a new session
 	 */
 	initializeProcedureMetadata(
-		session: CyrusAgentSession,
+		session: SylasAgentSession,
 		procedure: ProcedureDefinition,
 	): void {
 		if (!session.metadata) {
@@ -274,7 +274,7 @@ IMPORTANT: Respond with ONLY the classification word, nothing else.`;
 	 * Record subroutine completion and advance to next
 	 */
 	advanceToNextSubroutine(
-		session: CyrusAgentSession,
+		session: SylasAgentSession,
 		sessionId: string | null,
 		result?: string,
 	): void {
@@ -327,7 +327,7 @@ IMPORTANT: Respond with ONLY the classification word, nothing else.`;
 	 * Get the result from the last completed subroutine in the history.
 	 * Returns null if there is no history or no result stored.
 	 */
-	getLastSubroutineResult(session: CyrusAgentSession): string | null {
+	getLastSubroutineResult(session: SylasAgentSession): string | null {
 		const procedureMetadata = session.metadata?.procedure as
 			| ProcedureMetadata
 			| undefined;
@@ -347,7 +347,7 @@ IMPORTANT: Respond with ONLY the classification word, nothing else.`;
 	/**
 	 * Check if procedure is complete
 	 */
-	isProcedureComplete(session: CyrusAgentSession): boolean {
+	isProcedureComplete(session: SylasAgentSession): boolean {
 		return this.getNextSubroutine(session) === null;
 	}
 

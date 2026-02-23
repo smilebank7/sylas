@@ -1,36 +1,36 @@
 import type { FastifyInstance } from "fastify";
 import { handleCheckGh } from "./handlers/checkGh.js";
 import { handleConfigureMcp } from "./handlers/configureMcp.js";
-import { handleCyrusConfig } from "./handlers/cyrusConfig.js";
-import { handleCyrusEnv } from "./handlers/cyrusEnv.js";
 import {
 	handleRepository,
 	handleRepositoryDelete,
 } from "./handlers/repository.js";
+import { handleSylasConfig } from "./handlers/sylasConfig.js";
+import { handleSylasEnv } from "./handlers/sylasEnv.js";
 import { handleTestMcp } from "./handlers/testMcp.js";
 import type {
 	ApiResponse,
 	CheckGhPayload,
 	ConfigureMcpPayload,
-	CyrusConfigPayload,
-	CyrusEnvPayload,
 	DeleteRepositoryPayload,
 	RepositoryPayload,
+	SylasConfigPayload,
+	SylasEnvPayload,
 	TestMcpPayload,
 } from "./types.js";
 
 /**
  * ConfigUpdater registers configuration update routes with a Fastify server
- * Handles: cyrus-config, cyrus-env, repository, test-mcp, configure-mcp, check-gh endpoints
+ * Handles: sylas-config, sylas-env, repository, test-mcp, configure-mcp, check-gh endpoints
  */
 export class ConfigUpdater {
 	private fastify: FastifyInstance;
-	private cyrusHome: string;
+	private sylasHome: string;
 	private apiKey: string;
 
-	constructor(fastify: FastifyInstance, cyrusHome: string, apiKey: string) {
+	constructor(fastify: FastifyInstance, sylasHome: string, apiKey: string) {
 		this.fastify = fastify;
-		this.cyrusHome = cyrusHome;
+		this.sylasHome = sylasHome;
 		this.apiKey = apiKey;
 	}
 
@@ -39,8 +39,8 @@ export class ConfigUpdater {
 	 */
 	register(): void {
 		// Register all routes with authentication
-		this.registerRoute("/api/update/cyrus-config", this.handleCyrusConfigRoute);
-		this.registerRoute("/api/update/cyrus-env", this.handleCyrusEnvRoute);
+		this.registerRoute("/api/update/sylas-config", this.handleSylasConfigRoute);
+		this.registerRoute("/api/update/sylas-env", this.handleSylasEnvRoute);
 		this.registerRoute("/api/update/repository", this.handleRepositoryRoute);
 		this.registerDeleteRoute(
 			"/api/update/repository",
@@ -126,32 +126,32 @@ export class ConfigUpdater {
 	}
 
 	/**
-	 * Handle cyrus-config update
+	 * Handle sylas-config update
 	 */
-	private async handleCyrusConfigRoute(
-		payload: CyrusConfigPayload,
+	private async handleSylasConfigRoute(
+		payload: SylasConfigPayload,
 	): Promise<ApiResponse> {
-		const response = await handleCyrusConfig(payload, this.cyrusHome);
+		const response = await handleSylasConfig(payload, this.sylasHome);
 
 		// Emit restart event if requested
-		if (response.success && response.data?.restartCyrus) {
-			this.fastify.log.info("Config update requested Cyrus restart");
+		if (response.success && response.data?.restartSylas) {
+			this.fastify.log.info("Config update requested Sylas restart");
 		}
 
 		return response;
 	}
 
 	/**
-	 * Handle cyrus-env update
+	 * Handle sylas-env update
 	 */
-	private async handleCyrusEnvRoute(
-		payload: CyrusEnvPayload,
+	private async handleSylasEnvRoute(
+		payload: SylasEnvPayload,
 	): Promise<ApiResponse> {
-		const response = await handleCyrusEnv(payload, this.cyrusHome);
+		const response = await handleSylasEnv(payload, this.sylasHome);
 
 		// Emit restart event if requested
-		if (response.success && response.data?.restartCyrus) {
-			this.fastify.log.info("Env update requested Cyrus restart");
+		if (response.success && response.data?.restartSylas) {
+			this.fastify.log.info("Env update requested Sylas restart");
 		}
 
 		return response;
@@ -163,7 +163,7 @@ export class ConfigUpdater {
 	private async handleRepositoryRoute(
 		payload: RepositoryPayload,
 	): Promise<ApiResponse> {
-		return handleRepository(payload, this.cyrusHome);
+		return handleRepository(payload, this.sylasHome);
 	}
 
 	/**
@@ -181,7 +181,7 @@ export class ConfigUpdater {
 	private async handleConfigureMcpRoute(
 		payload: ConfigureMcpPayload,
 	): Promise<ApiResponse> {
-		return handleConfigureMcp(payload, this.cyrusHome);
+		return handleConfigureMcp(payload, this.sylasHome);
 	}
 
 	/**
@@ -190,7 +190,7 @@ export class ConfigUpdater {
 	private async handleCheckGhRoute(
 		payload: CheckGhPayload,
 	): Promise<ApiResponse> {
-		return handleCheckGh(payload, this.cyrusHome);
+		return handleCheckGh(payload, this.sylasHome);
 	}
 
 	/**
@@ -199,6 +199,6 @@ export class ConfigUpdater {
 	private async handleRepositoryDeleteRoute(
 		payload: DeleteRepositoryPayload,
 	): Promise<ApiResponse> {
-		return handleRepositoryDelete(payload, this.cyrusHome);
+		return handleRepositoryDelete(payload, this.sylasHome);
 	}
 }

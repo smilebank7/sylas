@@ -3,7 +3,7 @@ import {
 	AgentSessionType,
 	LinearClient,
 } from "@linear/sdk";
-import type { CyrusAgentSession } from "cyrus-core";
+import type { SylasAgentSession } from "sylas-core";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AgentSessionManager } from "../src/AgentSessionManager.js";
 import { EdgeWorker } from "../src/EdgeWorker.js";
@@ -12,7 +12,7 @@ import type { EdgeWorkerConfig, RepositoryConfig } from "../src/types.js";
 // Mock dependencies
 vi.mock("@linear/sdk");
 vi.mock("../src/AgentSessionManager.js");
-vi.mock("cyrus-core", async (importOriginal) => {
+vi.mock("sylas-core", async (importOriginal) => {
 	const actual = (await importOriginal()) as any;
 	return {
 		...actual,
@@ -88,7 +88,7 @@ describe("EdgeWorker - Orchestrator Label Rerouting", () => {
 
 		mockConfig = {
 			proxyUrl: "http://localhost:3000",
-			cyrusHome: "/tmp/test-cyrus-home",
+			sylasHome: "/tmp/test-sylas-home",
 			repositories: [mockRepository],
 			handlers: {
 				createWorkspace: vi.fn().mockResolvedValue({
@@ -122,7 +122,7 @@ describe("EdgeWorker - Orchestrator Label Rerouting", () => {
 				}),
 			});
 
-			const session: CyrusAgentSession = {
+			const session: SylasAgentSession = {
 				id: "agent-session-123",
 				externalSessionId: "agent-session-123",
 				type: AgentSessionType.CommentThread,
@@ -178,7 +178,7 @@ describe("EdgeWorker - Orchestrator Label Rerouting", () => {
 
 		it("should use AI routing when Orchestrator label is NOT present", async () => {
 			// Arrange - Mock issue WITHOUT Orchestrator label (default)
-			const session: CyrusAgentSession = {
+			const session: SylasAgentSession = {
 				id: "agent-session-123",
 				externalSessionId: "agent-session-123",
 				type: AgentSessionType.CommentThread,
@@ -239,7 +239,7 @@ describe("EdgeWorker - Orchestrator Label Rerouting", () => {
 				}),
 			});
 
-			const session: CyrusAgentSession = {
+			const session: SylasAgentSession = {
 				id: "agent-session-123",
 				externalSessionId: "agent-session-123",
 				type: AgentSessionType.CommentThread,
@@ -304,7 +304,7 @@ describe("EdgeWorker - Orchestrator Label Rerouting", () => {
 				}),
 			});
 
-			const session: CyrusAgentSession = {
+			const session: SylasAgentSession = {
 				id: "agent-session-123",
 				externalSessionId: "agent-session-123",
 				type: AgentSessionType.CommentThread,
@@ -362,7 +362,7 @@ Work completed on subtask TEST-124.
 			// Arrange - Mock Linear client to throw error
 			mockLinearClient.issue.mockRejectedValue(new Error("Linear API error"));
 
-			const session: CyrusAgentSession = {
+			const session: SylasAgentSession = {
 				id: "agent-session-123",
 				externalSessionId: "agent-session-123",
 				type: AgentSessionType.CommentThread,
@@ -418,7 +418,7 @@ Work completed on subtask TEST-124.
 				}),
 			});
 
-			const session: CyrusAgentSession = {
+			const session: SylasAgentSession = {
 				id: "agent-session-123",
 				externalSessionId: "agent-session-123",
 				type: AgentSessionType.CommentThread,
@@ -474,7 +474,7 @@ Work completed on subtask TEST-124.
 				}),
 			});
 
-			const session: CyrusAgentSession = {
+			const session: SylasAgentSession = {
 				id: "agent-session-123",
 				externalSessionId: "agent-session-123",
 				type: AgentSessionType.CommentThread,
@@ -540,7 +540,7 @@ Work completed on subtask TEST-124.
 			// Create new EdgeWorker with the config that has no orchestrator labelPrompts
 			const configWithoutOrchestratorLabels: EdgeWorkerConfig = {
 				proxyUrl: "http://localhost:3000",
-				cyrusHome: "/tmp/test-cyrus-home",
+				sylasHome: "/tmp/test-sylas-home",
 				repositories: [repositoryWithoutOrchestratorConfig],
 				handlers: {
 					createWorkspace: vi.fn().mockResolvedValue({
@@ -569,7 +569,7 @@ Work completed on subtask TEST-124.
 				}),
 			});
 
-			const session: CyrusAgentSession = {
+			const session: SylasAgentSession = {
 				id: "agent-session-123",
 				externalSessionId: "agent-session-123",
 				type: AgentSessionType.CommentThread,
@@ -634,7 +634,7 @@ Work completed on subtask TEST-124.
 			// Create new EdgeWorker with the config that has no orchestrator labelPrompts
 			const configWithoutOrchestratorLabels: EdgeWorkerConfig = {
 				proxyUrl: "http://localhost:3000",
-				cyrusHome: "/tmp/test-cyrus-home",
+				sylasHome: "/tmp/test-sylas-home",
 				repositories: [repositoryWithoutOrchestratorConfig],
 				handlers: {
 					createWorkspace: vi.fn().mockResolvedValue({
@@ -663,7 +663,7 @@ Work completed on subtask TEST-124.
 				}),
 			});
 
-			const session: CyrusAgentSession = {
+			const session: SylasAgentSession = {
 				id: "agent-session-123",
 				externalSessionId: "agent-session-123",
 				type: AgentSessionType.CommentThread,
@@ -728,7 +728,7 @@ Work completed on subtask TEST-124.
 			// Create new EdgeWorker with the config that has no orchestrator labelPrompts
 			const configWithoutOrchestratorLabels: EdgeWorkerConfig = {
 				proxyUrl: "http://localhost:3000",
-				cyrusHome: "/tmp/test-cyrus-home",
+				sylasHome: "/tmp/test-sylas-home",
 				repositories: [repositoryWithoutOrchestratorConfig],
 				handlers: {
 					createWorkspace: vi.fn().mockResolvedValue({
@@ -757,7 +757,7 @@ Work completed on subtask TEST-124.
 				}),
 			});
 
-			const session: CyrusAgentSession = {
+			const session: SylasAgentSession = {
 				id: "agent-session-123",
 				externalSessionId: "agent-session-123",
 				type: AgentSessionType.CommentThread,

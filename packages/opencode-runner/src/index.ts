@@ -1,7 +1,7 @@
 /**
  * OpenCode Runner Package
  *
- * SDK integration for the OpenCode AI coding agent with Cyrus.
+ * SDK integration for the OpenCode AI coding agent with Sylas.
  *
  * This package provides:
  * - Type definitions for OpenCode configuration and sessions
@@ -14,14 +14,14 @@
  *   type OpenCodeRunnerConfig,
  *   type OpenCodeSessionInfo,
  *   allocateOpenCodePort,
- * } from "cyrus-opencode-runner";
+ * } from "sylas-opencode-runner";
  *
  * // Allocate a port for the OpenCode server
  * const { port } = await allocateOpenCodePort();
  *
  * // Configure the runner
  * const config: OpenCodeRunnerConfig = {
- *   cyrusHome: "~/.cyrus",
+ *   sylasHome: "~/.sylas",
  *   workingDirectory: "/path/to/project",
  *   serverConfig: {
  *     port,

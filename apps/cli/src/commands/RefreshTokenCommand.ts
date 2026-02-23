@@ -96,8 +96,8 @@ export class RefreshTokenCommand extends BaseCommand {
 			console.log("Opening Linear OAuth flow in your browser...");
 
 			// Use the proxy's OAuth flow with a callback to localhost
-			const serverPort = process.env.CYRUS_SERVER_PORT
-				? parseInt(process.env.CYRUS_SERVER_PORT, 10)
+			const serverPort = process.env.SYLAS_SERVER_PORT
+				? parseInt(process.env.SYLAS_SERVER_PORT, 10)
 				: 3456;
 			const callbackUrl = `http://localhost:${serverPort}/callback`;
 			const proxyUrl = this.app.getProxyUrl();

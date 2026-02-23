@@ -65,7 +65,7 @@ type RouteHandler = (...args: unknown[]) => unknown;
 
 // Mock Application
 const createMockApp = () => ({
-	cyrusHome: "/home/user/.cyrus",
+	sylasHome: "/home/user/.sylas",
 	config: {
 		exists: vi.fn().mockReturnValue(true),
 		load: vi.fn(),
@@ -115,7 +115,7 @@ describe("SelfAuthCommand", () => {
 		it("should error when LINEAR_CLIENT_ID is missing", async () => {
 			delete process.env.LINEAR_CLIENT_ID;
 			process.env.LINEAR_CLIENT_SECRET = "test-secret";
-			process.env.CYRUS_BASE_URL = "https://example.com";
+			process.env.SYLAS_BASE_URL = "https://example.com";
 
 			await expect(command.execute([])).rejects.toThrow("process.exit called");
 			expect(mockExit).toHaveBeenCalledWith(1);
@@ -127,7 +127,7 @@ describe("SelfAuthCommand", () => {
 		it("should error when LINEAR_CLIENT_SECRET is missing", async () => {
 			process.env.LINEAR_CLIENT_ID = "test-client-id";
 			delete process.env.LINEAR_CLIENT_SECRET;
-			process.env.CYRUS_BASE_URL = "https://example.com";
+			process.env.SYLAS_BASE_URL = "https://example.com";
 
 			await expect(command.execute([])).rejects.toThrow("process.exit called");
 			expect(mockExit).toHaveBeenCalledWith(1);
@@ -136,15 +136,15 @@ describe("SelfAuthCommand", () => {
 			);
 		});
 
-		it("should error when CYRUS_BASE_URL is missing", async () => {
+		it("should error when SYLAS_BASE_URL is missing", async () => {
 			process.env.LINEAR_CLIENT_ID = "test-client-id";
 			process.env.LINEAR_CLIENT_SECRET = "test-secret";
-			delete process.env.CYRUS_BASE_URL;
+			delete process.env.SYLAS_BASE_URL;
 
 			await expect(command.execute([])).rejects.toThrow("process.exit called");
 			expect(mockExit).toHaveBeenCalledWith(1);
 			expect(mockConsoleLog).toHaveBeenCalledWith(
-				expect.stringContaining("CYRUS_BASE_URL"),
+				expect.stringContaining("SYLAS_BASE_URL"),
 			);
 		});
 	});
@@ -153,7 +153,7 @@ describe("SelfAuthCommand", () => {
 		it("should error when config file does not exist", async () => {
 			process.env.LINEAR_CLIENT_ID = "test-client-id";
 			process.env.LINEAR_CLIENT_SECRET = "test-secret";
-			process.env.CYRUS_BASE_URL = "https://example.com";
+			process.env.SYLAS_BASE_URL = "https://example.com";
 
 			mocks.mockReadFileSync.mockImplementation(() => {
 				throw new Error("ENOENT: no such file or directory");
@@ -166,7 +166,7 @@ describe("SelfAuthCommand", () => {
 		it("should error when config file is invalid JSON", async () => {
 			process.env.LINEAR_CLIENT_ID = "test-client-id";
 			process.env.LINEAR_CLIENT_SECRET = "test-secret";
-			process.env.CYRUS_BASE_URL = "https://example.com";
+			process.env.SYLAS_BASE_URL = "https://example.com";
 
 			mocks.mockReadFileSync.mockReturnValue("invalid json{");
 
@@ -179,7 +179,7 @@ describe("SelfAuthCommand", () => {
 		beforeEach(() => {
 			process.env.LINEAR_CLIENT_ID = "test-client-id";
 			process.env.LINEAR_CLIENT_SECRET = "test-secret";
-			process.env.CYRUS_BASE_URL = "https://example.com";
+			process.env.SYLAS_BASE_URL = "https://example.com";
 
 			mocks.mockReadFileSync.mockReturnValue(
 				JSON.stringify({
@@ -300,7 +300,7 @@ describe("SelfAuthCommand", () => {
 		beforeEach(() => {
 			process.env.LINEAR_CLIENT_ID = "test-client-id";
 			process.env.LINEAR_CLIENT_SECRET = "test-secret";
-			process.env.CYRUS_BASE_URL = "https://example.com";
+			process.env.SYLAS_BASE_URL = "https://example.com";
 
 			mocks.mockReadFileSync.mockReturnValue(
 				JSON.stringify({
@@ -401,7 +401,7 @@ describe("SelfAuthCommand", () => {
 		beforeEach(() => {
 			process.env.LINEAR_CLIENT_ID = "test-client-id";
 			process.env.LINEAR_CLIENT_SECRET = "test-secret";
-			process.env.CYRUS_BASE_URL = "https://example.com";
+			process.env.SYLAS_BASE_URL = "https://example.com";
 		});
 
 		it("should update repositories matching workspace ID", async () => {

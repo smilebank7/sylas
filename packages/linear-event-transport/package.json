@@ -1,5 +1,5 @@
 {
-	"name": "cyrus-linear-event-transport",
+	"name": "sylas-linear-event-transport",
 	"version": "0.2.21",
 	"description": "Linear event transport for receiving and verifying Linear webhooks",
 	"type": "module",
@@ -17,7 +17,7 @@
 	},
 	"dependencies": {
 		"@linear/sdk": "^64.0.0",
-		"cyrus-core": "workspace:*",
+		"sylas-core": "workspace:*",
 		"fastify": "^5.7.3"
 	},
 	"devDependencies": {

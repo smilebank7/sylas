@@ -1,4 +1,4 @@
-import type { UserAccessControlConfig, UserIdentifier } from "cyrus-core";
+import type { UserAccessControlConfig, UserIdentifier } from "sylas-core";
 
 /**
  * Result of an access check operation.

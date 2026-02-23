@@ -1,5 +1,5 @@
 import type { SDKMessage } from "@anthropic-ai/claude-agent-sdk";
-import type { ISimpleAgentRunner } from "cyrus-core";
+import type { ISimpleAgentRunner } from "sylas-core";
 import {
 	InvalidResponseError,
 	SimpleAgentError,
@@ -130,10 +130,10 @@ export abstract class SimpleAgentRunner<T extends string>
 			);
 		}
 
-		if (!config.cyrusHome) {
+		if (!config.sylasHome) {
 			throw new SimpleAgentError(
 				SimpleAgentErrorCode.INVALID_CONFIG,
-				"cyrusHome is required",
+				"sylasHome is required",
 			);
 		}
 	}

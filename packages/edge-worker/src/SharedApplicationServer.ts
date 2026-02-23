@@ -1,7 +1,7 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { CloudflareTunnelClient } from "cyrus-cloudflare-tunnel-client";
-import { createLogger, type ILogger } from "cyrus-core";
 import Fastify, { type FastifyInstance } from "fastify";
+import { CloudflareTunnelClient } from "sylas-cloudflare-tunnel-client";
+import { createLogger, type ILogger } from "sylas-core";
 
 /**
  * OAuth callback state for tracking flows
@@ -161,7 +161,7 @@ export class SharedApplicationServer {
 				if (connectionCount < requiredConnections) {
 					reject(
 						new Error(
-							`Timeout waiting for Cloudflare tunnel (${connectionCount}/${requiredConnections} connections). This is usually caused by firewall/VPN/proxy blocking cloudflared. See troubleshooting: https://github.com/ceedaragents/cyrus/blob/main/docs/CLOUDFLARE_TUNNEL.md#troubleshooting`,
+							`Timeout waiting for Cloudflare tunnel (${connectionCount}/${requiredConnections} connections). This is usually caused by firewall/VPN/proxy blocking cloudflared. See troubleshooting: https://github.com/smilebank7/sylas/blob/main/docs/CLOUDFLARE_TUNNEL.md#troubleshooting`,
 						),
 					);
 				}
@@ -278,7 +278,7 @@ export class SharedApplicationServer {
 
 			// Check if we should use direct Linear OAuth (when self-hosting)
 			const isExternalHost =
-				process.env.CYRUS_HOST_EXTERNAL?.toLowerCase().trim() === "true";
+				process.env.SYLAS_HOST_EXTERNAL?.toLowerCase().trim() === "true";
 			const useDirectOAuth = isExternalHost && process.env.LINEAR_CLIENT_ID;
 
 			const callbackBaseUrl = `http://${this.host}:${this.port}`;
@@ -287,7 +287,7 @@ export class SharedApplicationServer {
 			if (useDirectOAuth) {
 				// Use local OAuth authorize endpoint
 				authUrl = `${callbackBaseUrl}/oauth/authorize?callback=${encodeURIComponent(`${callbackBaseUrl}/callback`)}`;
-				this.logger.info(`Using direct OAuth mode (CYRUS_HOST_EXTERNAL=true)`);
+				this.logger.info(`Using direct OAuth mode (SYLAS_HOST_EXTERNAL=true)`);
 			} else {
 				// Use proxy OAuth endpoint
 				authUrl = `${proxyUrl}/oauth/authorize?callback=${encodeURIComponent(`${callbackBaseUrl}/callback`)}`;

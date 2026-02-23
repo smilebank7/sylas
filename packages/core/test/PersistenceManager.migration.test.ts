@@ -26,7 +26,7 @@ describe("PersistenceManager", () => {
 
 	beforeEach(() => {
 		vi.clearAllMocks();
-		persistenceManager = new PersistenceManager("/tmp/test-cyrus");
+		persistenceManager = new PersistenceManager("/tmp/test-sylas");
 	});
 
 	describe("v2.0 to v3.0 Migration", () => {

@@ -14,7 +14,7 @@ describe("Logger", () => {
 
 	afterEach(() => {
 		vi.restoreAllMocks();
-		delete process.env.CYRUS_LOG_LEVEL;
+		delete process.env.SYLAS_LOG_LEVEL;
 	});
 
 	describe("level filtering", () => {
@@ -244,17 +244,17 @@ describe("Logger", () => {
 		});
 	});
 
-	describe("CYRUS_LOG_LEVEL environment variable", () => {
-		it("respects CYRUS_LOG_LEVEL=DEBUG", () => {
-			process.env.CYRUS_LOG_LEVEL = "DEBUG";
+	describe("SYLAS_LOG_LEVEL environment variable", () => {
+		it("respects SYLAS_LOG_LEVEL=DEBUG", () => {
+			process.env.SYLAS_LOG_LEVEL = "DEBUG";
 			const logger = createLogger({ component: "Test" });
 			logger.debug("visible");
 
 			expect(logSpy).toHaveBeenCalledTimes(1);
 		});
 
-		it("respects CYRUS_LOG_LEVEL=WARN", () => {
-			process.env.CYRUS_LOG_LEVEL = "WARN";
+		it("respects SYLAS_LOG_LEVEL=WARN", () => {
+			process.env.SYLAS_LOG_LEVEL = "WARN";
 			const logger = createLogger({ component: "Test" });
 			logger.info("filtered");
 			logger.warn("visible");
@@ -264,7 +264,7 @@ describe("Logger", () => {
 		});
 
 		it("is case-insensitive", () => {
-			process.env.CYRUS_LOG_LEVEL = "debug";
+			process.env.SYLAS_LOG_LEVEL = "debug";
 			const logger = createLogger({ component: "Test" });
 			logger.debug("visible");
 
@@ -272,7 +272,7 @@ describe("Logger", () => {
 		});
 
 		it("explicit level option overrides env var", () => {
-			process.env.CYRUS_LOG_LEVEL = "DEBUG";
+			process.env.SYLAS_LOG_LEVEL = "DEBUG";
 			const logger = createLogger({
 				component: "Test",
 				level: LogLevel.ERROR,
@@ -286,7 +286,7 @@ describe("Logger", () => {
 		});
 
 		it("falls back to INFO for unrecognized values", () => {
-			process.env.CYRUS_LOG_LEVEL = "FOOBAR";
+			process.env.SYLAS_LOG_LEVEL = "FOOBAR";
 			const logger = createLogger({ component: "Test" });
 			logger.debug("filtered");
 			logger.info("visible");

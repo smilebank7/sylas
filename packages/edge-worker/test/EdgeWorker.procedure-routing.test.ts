@@ -10,7 +10,7 @@ describe("EdgeWorker - Procedure Routing", () => {
 
 		// Create a standalone ProcedureAnalyzer for testing
 		procedureAnalyzer = new ProcedureAnalyzer({
-			cyrusHome: "/test/.cyrus",
+			sylasHome: "/test/.sylas",
 		});
 	});
 

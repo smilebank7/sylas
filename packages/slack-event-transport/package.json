@@ -1,5 +1,5 @@
 {
-	"name": "cyrus-slack-event-transport",
+	"name": "sylas-slack-event-transport",
 	"version": "0.1.0",
 	"description": "Slack event transport for receiving and verifying forwarded Slack webhooks",
 	"type": "module",
@@ -16,7 +16,7 @@
 		"test:run": "vitest run"
 	},
 	"dependencies": {
-		"cyrus-core": "workspace:*",
+		"sylas-core": "workspace:*",
 		"fastify": "^5.2.0"
 	},
 	"devDependencies": {

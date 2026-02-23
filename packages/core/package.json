@@ -1,7 +1,7 @@
 {
-	"name": "cyrus-core",
+	"name": "sylas-core",
 	"version": "0.2.21",
-	"description": "Core business logic for Cyrus",
+	"description": "Core business logic for Sylas",
 	"type": "module",
 	"main": "dist/index.js",
 	"types": "dist/index.d.ts",

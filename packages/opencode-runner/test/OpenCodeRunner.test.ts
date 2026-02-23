@@ -21,7 +21,7 @@ function createConfig(
 	overrides?: Partial<OpenCodeRunnerConfig>,
 ): OpenCodeRunnerConfig {
 	return {
-		cyrusHome: "/tmp/test-cyrus",
+		sylasHome: "/tmp/test-sylas",
 		workingDirectory: "/tmp/test-workspace",
 		...overrides,
 	};

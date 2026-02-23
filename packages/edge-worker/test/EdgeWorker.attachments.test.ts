@@ -32,7 +32,7 @@ describe("EdgeWorker - Native Attachments", () => {
 	beforeEach(() => {
 		mockConfig = {
 			proxyUrl: "http://localhost:3000",
-			cyrusHome: "/tmp/test-cyrus-home",
+			sylasHome: "/tmp/test-sylas-home",
 			repositories: [
 				{
 					id: "test-repo",

@@ -36,13 +36,13 @@ function getRepoNameFromUrl(repoUrl: string): string {
 
 /**
  * Handle repository cloning or verification
- * - Clones repositories to ~/.cyrus/repos/<repo-name> using GitHub CLI (gh)
+ * - Clones repositories to ~/.sylas/repos/<repo-name> using GitHub CLI (gh)
  * - If repository exists, verify it's a git repo and do nothing
- * - If repository doesn't exist, clone it to ~/.cyrus/repos/<repo-name>
+ * - If repository doesn't exist, clone it to ~/.sylas/repos/<repo-name>
  */
 export async function handleRepository(
 	payload: RepositoryPayload,
-	cyrusHome: string,
+	sylasHome: string,
 ): Promise<ApiResponse> {
 	try {
 		// Validate payload
@@ -59,8 +59,8 @@ export async function handleRepository(
 		const repoName =
 			payload.repository_name || getRepoNameFromUrl(payload.repository_url);
 
-		// Construct path within ~/.cyrus/repos
-		const reposDir = join(cyrusHome, "repos");
+		// Construct path within ~/.sylas/repos
+		const reposDir = join(sylasHome, "repos");
 		const repoPath = join(reposDir, repoName);
 
 		// Ensure repos directory exists
@@ -142,12 +142,12 @@ export async function handleRepository(
 
 /**
  * Handle repository deletion
- * - Removes repository directory from ~/.cyrus/repos/<repo-name>
- * - Removes worktrees from ~/.cyrus/workspaces/<linear-team-key>/<repo-name>
+ * - Removes repository directory from ~/.sylas/repos/<repo-name>
+ * - Removes worktrees from ~/.sylas/workspaces/<linear-team-key>/<repo-name>
  */
 export async function handleRepositoryDelete(
 	payload: DeleteRepositoryPayload,
-	cyrusHome: string,
+	sylasHome: string,
 ): Promise<ApiResponse> {
 	try {
 		// Validate payload
@@ -164,7 +164,7 @@ export async function handleRepositoryDelete(
 		}
 
 		const repoName = payload.repository_name;
-		const reposDir = join(cyrusHome, "repos");
+		const reposDir = join(sylasHome, "repos");
 		const repoPath = join(reposDir, repoName);
 
 		// Check if repository exists
@@ -193,7 +193,7 @@ export async function handleRepositoryDelete(
 		// Remove worktrees if linear_team_key is provided
 		const deletedWorktrees: string[] = [];
 		if (payload.linear_team_key) {
-			const workspacesDir = join(cyrusHome, "workspaces");
+			const workspacesDir = join(sylasHome, "workspaces");
 			const teamWorkspaceDir = join(workspacesDir, payload.linear_team_key);
 			const teamRepoWorkspaceDir = join(teamWorkspaceDir, repoName);
 

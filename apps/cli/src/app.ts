@@ -26,13 +26,13 @@ const packageJson = JSON.parse(readFileSync(packageJsonPath, "utf-8"));
 const program = new Command();
 
 program
-	.name("cyrus")
+	.name("sylas")
 	.description("AI-powered Linear issue automation using Claude")
 	.version(packageJson.version)
 	.option(
-		"--cyrus-home <path>",
-		"Specify custom Cyrus config directory",
-		resolve(homedir(), ".cyrus"),
+		"--sylas-home <path>",
+		"Specify custom Sylas config directory",
+		resolve(homedir(), ".sylas"),
 	)
 	.option("--env-file <path>", "Path to environment variables file");
 
@@ -43,7 +43,7 @@ program
 	.action(async () => {
 		const opts = program.opts();
 		const app = new Application(
-			opts.cyrusHome,
+			opts.sylasHome,
 			opts.envFile,
 			packageJson.version,
 		);
@@ -53,11 +53,11 @@ program
 // Auth command
 program
 	.command("auth <auth-key>")
-	.description("Authenticate with Cyrus using auth key")
+	.description("Authenticate with Sylas using auth key")
 	.action(async (authKey: string) => {
 		const opts = program.opts();
 		const app = new Application(
-			opts.cyrusHome,
+			opts.sylasHome,
 			opts.envFile,
 			packageJson.version,
 		);
@@ -71,7 +71,7 @@ program
 	.action(async () => {
 		const opts = program.opts();
 		const app = new Application(
-			opts.cyrusHome,
+			opts.sylasHome,
 			opts.envFile,
 			packageJson.version,
 		);
@@ -85,7 +85,7 @@ program
 	.action(async () => {
 		const opts = program.opts();
 		const app = new Application(
-			opts.cyrusHome,
+			opts.sylasHome,
 			opts.envFile,
 			packageJson.version,
 		);
@@ -99,7 +99,7 @@ program
 	.action(async () => {
 		const opts = program.opts();
 		const app = new Application(
-			opts.cyrusHome,
+			opts.sylasHome,
 			opts.envFile,
 			packageJson.version,
 		);
@@ -115,7 +115,7 @@ program
 	.action(async (url?: string, workspace?: string) => {
 		const opts = program.opts();
 		const app = new Application(
-			opts.cyrusHome,
+			opts.sylasHome,
 			opts.envFile,
 			packageJson.version,
 		);

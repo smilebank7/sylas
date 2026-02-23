@@ -8,7 +8,7 @@ import {
 	DEFAULT_CONFIG_FILENAME,
 	DEFAULT_WORKTREES_DIR,
 	type EdgeConfig,
-} from "cyrus-core";
+} from "sylas-core";
 import { BaseCommand } from "./ICommand.js";
 
 /**
@@ -25,9 +25,9 @@ interface WorkspaceCredentials {
  * Self-add-repo command - clones a repo and adds it to config.json
  *
  * Usage:
- *   cyrus self-add-repo                      # prompts for everything
- *   cyrus self-add-repo <url>                # prompts for workspace if multiple
- *   cyrus self-add-repo <url> <workspace>    # no prompts
+ *   sylas self-add-repo                      # prompts for everything
+ *   sylas self-add-repo <url>                # prompts for workspace if multiple
+ *   sylas self-add-repo <url> <workspace>    # no prompts
  */
 export class SelfAddRepoCommand extends BaseCommand {
 	private rl: readline.Interface | null = null;
@@ -61,7 +61,7 @@ export class SelfAddRepoCommand extends BaseCommand {
 
 		try {
 			// Load config
-			const configPath = resolve(this.app.cyrusHome, DEFAULT_CONFIG_FILENAME);
+			const configPath = resolve(this.app.sylasHome, DEFAULT_CONFIG_FILENAME);
 			let config: EdgeConfig;
 			try {
 				config = JSON.parse(readFileSync(configPath, "utf-8")) as EdgeConfig;
@@ -122,7 +122,7 @@ export class SelfAddRepoCommand extends BaseCommand {
 
 			if (workspaces.size === 0) {
 				this.logError(
-					"No Linear credentials found. Run 'cyrus self-auth' first.",
+					"No Linear credentials found. Run 'sylas self-auth' first.",
 				);
 				process.exit(1);
 			}
@@ -161,7 +161,7 @@ export class SelfAddRepoCommand extends BaseCommand {
 			}
 
 			// Clone the repo
-			const repositoryPath = resolve(this.app.cyrusHome, "repos", repoName);
+			const repositoryPath = resolve(this.app.sylasHome, "repos", repoName);
 
 			if (existsSync(repositoryPath)) {
 				console.log(`Repository already exists at ${repositoryPath}`);
@@ -183,7 +183,7 @@ export class SelfAddRepoCommand extends BaseCommand {
 				name: repoName,
 				repositoryPath,
 				baseBranch: DEFAULT_BASE_BRANCH,
-				workspaceBaseDir: resolve(this.app.cyrusHome, DEFAULT_WORKTREES_DIR),
+				workspaceBaseDir: resolve(this.app.sylasHome, DEFAULT_WORKTREES_DIR),
 				linearWorkspaceId: selectedWorkspace.id,
 				linearWorkspaceName: selectedWorkspace.name,
 				linearToken: selectedWorkspace.token,

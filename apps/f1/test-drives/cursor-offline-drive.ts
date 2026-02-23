@@ -6,14 +6,14 @@ import type {
 	Issue,
 	LinearAgentSessionCreatedWebhook,
 	RepositoryConfig,
-} from "cyrus-core";
-import { EdgeWorker } from "cyrus-edge-worker";
+} from "sylas-core";
+import { EdgeWorker } from "sylas-edge-worker";
 
 async function main() {
-	process.env.CYRUS_CURSOR_MOCK = "1";
+	process.env.SYLAS_CURSOR_MOCK = "1";
 
-	const cyrusHome = await mkdtemp(join(tmpdir(), "cyrus-f1-offline-"));
-	const workspaceBaseDir = join(cyrusHome, "workspaces");
+	const sylasHome = await mkdtemp(join(tmpdir(), "sylas-f1-offline-"));
+	const workspaceBaseDir = join(sylasHome, "workspaces");
 	await mkdir(workspaceBaseDir, { recursive: true });
 
 	const repository: RepositoryConfig = {
@@ -29,7 +29,7 @@ async function main() {
 
 	const config: EdgeWorkerConfig = {
 		platform: "cli",
-		cyrusHome,
+		sylasHome,
 		repositories: [repository],
 		handlers: {
 			createWorkspace: async (issue: Issue) => {
@@ -43,7 +43,7 @@ async function main() {
 	const worker = new EdgeWorker(config);
 	const issueTracker = (worker as any).issueTrackers.get(
 		repository.id,
-	) as import("cyrus-core").CLIIssueTrackerService;
+	) as import("sylas-core").CLIIssueTrackerService;
 
 	const issue = await issueTracker.createIssue({
 		teamId: "team-default",
@@ -80,7 +80,7 @@ async function main() {
 				identifier: issue.identifier,
 				team: { key: "DEF" },
 			},
-			comment: { body: "This thread is for an agent session with cyrus." },
+			comment: { body: "This thread is for an agent session with sylas." },
 		},
 	};
 

@@ -13,12 +13,12 @@ describe("CodexRunner MCP config mapping", () => {
 						Authorization: "Bearer linear-token",
 					},
 				},
-				"cyrus-tools": {
+				"sylas-tools": {
 					type: "http",
-					url: "http://127.0.0.1:4444/mcp/cyrus-tools",
+					url: "http://127.0.0.1:4444/mcp/sylas-tools",
 					headers: {
-						Authorization: "Bearer cyrus-api-key",
-						"x-cyrus-mcp-context-id": "repo-1:session-1",
+						Authorization: "Bearer sylas-api-key",
+						"x-sylas-mcp-context-id": "repo-1:session-1",
 					},
 				},
 			},
@@ -28,9 +28,9 @@ describe("CodexRunner MCP config mapping", () => {
 		expect(mcpServers.linear.http_headers).toEqual({
 			Authorization: "Bearer linear-token",
 		});
-		expect(mcpServers["cyrus-tools"].http_headers).toEqual({
-			Authorization: "Bearer cyrus-api-key",
-			"x-cyrus-mcp-context-id": "repo-1:session-1",
+		expect(mcpServers["sylas-tools"].http_headers).toEqual({
+			Authorization: "Bearer sylas-api-key",
+			"x-sylas-mcp-context-id": "repo-1:session-1",
 		});
 	});
 

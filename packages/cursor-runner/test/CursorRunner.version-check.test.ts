@@ -60,8 +60,8 @@ describe("CursorRunner version check", () => {
 		for (const dir of tempDirs.splice(0)) {
 			rmSync(dir, { recursive: true, force: true });
 		}
-		delete process.env.CYRUS_CURSOR_MOCK;
-		delete process.env.CYRUS_CURSOR_AGENT_VERSION;
+		delete process.env.SYLAS_CURSOR_MOCK;
+		delete process.env.SYLAS_CURSOR_AGENT_VERSION;
 		spawnSyncMock.mockReset();
 		spawnMock.mockReset();
 	});
@@ -77,7 +77,7 @@ describe("CursorRunner version check", () => {
 
 		const messages: unknown[] = [];
 		const runner = new CursorRunner({
-			cyrusHome: "/tmp/cyrus",
+			sylasHome: "/tmp/sylas",
 			workingDirectory: workspace,
 			cursorAgentVersion: "2026.02.13-41ac335",
 			onMessage: (m) => messages.push(m),
@@ -131,7 +131,7 @@ describe("CursorRunner version check", () => {
 		spawnMock.mockReturnValue(createMockChildProcess());
 
 		const runner = new CursorRunner({
-			cyrusHome: "/tmp/cyrus",
+			sylasHome: "/tmp/sylas",
 			workingDirectory: workspace,
 			cursorAgentVersion: "2026.02.13-41ac335",
 		});
@@ -146,9 +146,9 @@ describe("CursorRunner version check", () => {
 		expect(spawnMock).toHaveBeenCalled();
 	});
 
-	it("skips version check when CYRUS_CURSOR_MOCK is set", async () => {
+	it("skips version check when SYLAS_CURSOR_MOCK is set", async () => {
 		const workspace = createTempDir();
-		process.env.CYRUS_CURSOR_MOCK = "1";
+		process.env.SYLAS_CURSOR_MOCK = "1";
 
 		spawnSyncMock.mockReturnValue({
 			status: 0,
@@ -157,7 +157,7 @@ describe("CursorRunner version check", () => {
 		});
 
 		const runner = new CursorRunner({
-			cyrusHome: "/tmp/cyrus",
+			sylasHome: "/tmp/sylas",
 			workingDirectory: workspace,
 			cursorAgentVersion: "2026.02.13-41ac335",
 		});

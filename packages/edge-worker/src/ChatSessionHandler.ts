@@ -1,9 +1,9 @@
 import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
-import type { McpServerConfig, SDKMessage } from "cyrus-claude-runner";
-import { ClaudeRunner, getAllTools } from "cyrus-claude-runner";
-import type { CyrusAgentSession, IAgentRunner, ILogger } from "cyrus-core";
-import { createLogger } from "cyrus-core";
+import type { McpServerConfig, SDKMessage } from "sylas-claude-runner";
+import { ClaudeRunner, getAllTools } from "sylas-claude-runner";
+import type { IAgentRunner, ILogger, SylasAgentSession } from "sylas-core";
+import { createLogger } from "sylas-core";
 import { AgentSessionManager } from "./AgentSessionManager.js";
 import { NoopActivitySink } from "./sinks/NoopActivitySink.js";
 
@@ -48,7 +48,7 @@ export interface ChatPlatformAdapter<TEvent> {
  * Callbacks for EdgeWorker integration (same pattern as RepositoryRouterDeps).
  */
 export interface ChatSessionHandlerDeps {
-	cyrusHome: string;
+	sylasHome: string;
 	defaultModel?: string;
 	defaultFallbackModel?: string;
 	mcpConfig?: Record<string, McpServerConfig>;
@@ -296,7 +296,7 @@ export class ChatSessionHandler<TEvent> {
 	 */
 	private async resumeSession(
 		event: TEvent,
-		existingSession: CyrusAgentSession,
+		existingSession: SylasAgentSession,
 		sessionId: string,
 		resumeSessionId: string,
 		taskInstructions: string,
@@ -350,7 +350,7 @@ export class ChatSessionHandler<TEvent> {
 		try {
 			const sanitizedKey = threadKey.replace(/[^a-zA-Z0-9.-]/g, "_");
 			const workspacePath = join(
-				this.deps.cyrusHome,
+				this.deps.sylasHome,
 				`${this.adapter.platformName}-workspaces`,
 				sanitizedKey,
 			);
@@ -383,7 +383,7 @@ export class ChatSessionHandler<TEvent> {
 		disallowedTools: string[];
 		allowedDirectories: string[];
 		workspaceName: string | undefined;
-		cyrusHome: string;
+		sylasHome: string;
 		appendSystemPrompt: string;
 		model: string | undefined;
 		fallbackModel: string | undefined;
@@ -405,7 +405,7 @@ export class ChatSessionHandler<TEvent> {
 			disallowedTools: [] as string[],
 			allowedDirectories: [workspacePath],
 			workspaceName,
-			cyrusHome: this.deps.cyrusHome,
+			sylasHome: this.deps.sylasHome,
 			appendSystemPrompt: systemPrompt,
 			model: this.deps.defaultModel,
 			fallbackModel: this.deps.defaultFallbackModel,

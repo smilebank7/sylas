@@ -1,19 +1,19 @@
 /**
- * Default Cyrus app base URL
- * Can be overridden via CYRUS_APP_URL environment variable for preview environments
+ * Default Sylas app base URL
+ * Can be overridden via SYLAS_APP_URL environment variable for preview environments
  */
-export const DEFAULT_CYRUS_APP_URL = "https://app.atcyrus.com";
+export const DEFAULT_SYLAS_APP_URL = "https://app.sylas.leejh.in";
 
 /**
- * Get the Cyrus app base URL from environment variable or use default
- * @returns The Cyrus app base URL (e.g., "https://app.atcyrus.com")
+ * Get the Sylas app base URL from environment variable or use default
+ * @returns The Sylas app base URL (e.g., "https://app.sylas.leejh.in")
  */
-export function getCyrusAppUrl(): string {
-	return process.env.CYRUS_APP_URL || DEFAULT_CYRUS_APP_URL;
+export function getSylasAppUrl(): string {
+	return process.env.SYLAS_APP_URL || DEFAULT_SYLAS_APP_URL;
 }
 
 /**
- * Config API response from cyrus-hosted
+ * Config API response from sylas-hosted
  */
 export interface ConfigApiResponse {
 	success: boolean;
@@ -25,16 +25,16 @@ export interface ConfigApiResponse {
 }
 
 /**
- * Client for retrieving configuration from cyrus-hosted
+ * Client for retrieving configuration from sylas-hosted
  * Authenticates using auth keys provided during onboarding
  */
 // biome-ignore lint/complexity/noStaticOnlyClass: Static utility client keeps existing callsites stable.
 export class ConfigApiClient {
 	/**
-	 * Get the config API URL, respecting CYRUS_APP_URL environment variable
+	 * Get the config API URL, respecting SYLAS_APP_URL environment variable
 	 */
 	private static getConfigApiUrl(): string {
-		return `${getCyrusAppUrl()}/api/config`;
+		return `${getSylasAppUrl()}/api/config`;
 	}
 
 	/**

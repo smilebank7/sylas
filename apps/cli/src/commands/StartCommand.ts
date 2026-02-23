@@ -1,5 +1,5 @@
-import { getCyrusAppUrl } from "cyrus-cloudflare-tunnel-client";
-import type { EdgeConfig } from "cyrus-core";
+import { getSylasAppUrl } from "sylas-cloudflare-tunnel-client";
+import type { EdgeConfig } from "sylas-core";
 import { BaseCommand } from "./ICommand.js";
 
 /**
@@ -12,10 +12,10 @@ export class StartCommand extends BaseCommand {
 			const edgeConfig = this.app.config.load();
 			const repositories = edgeConfig.repositories || [];
 
-			// Check if we're in setup waiting mode (no repositories + CYRUS_SETUP_PENDING flag)
+			// Check if we're in setup waiting mode (no repositories + SYLAS_SETUP_PENDING flag)
 			if (
 				repositories.length === 0 &&
-				process.env.CYRUS_SETUP_PENDING === "true"
+				process.env.SYLAS_SETUP_PENDING === "true"
 			) {
 				// Enable setup waiting mode and start config watcher
 				this.app.enableSetupWaitingMode();
@@ -79,7 +79,7 @@ export class StartCommand extends BaseCommand {
 				this.logger.info("\n💡 Cloudflare tunnel requires:");
 				this.logger.info("   - CLOUDFLARE_TOKEN environment variable");
 				this.logger.info(
-					`   - Get your token from: ${getCyrusAppUrl()}/onboarding`,
+					`   - Get your token from: ${getSylasAppUrl()}/onboarding`,
 				);
 			} else if (error.message?.includes("Failed to connect")) {
 				this.logger.info("\n💡 Connection issues can occur when:");

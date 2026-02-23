@@ -1,8 +1,8 @@
 # End-to-End Self-Hosting Guide
 
-This guide walks you through setting up Cyrus completely self-hosted, including your own Linear OAuth application. This is the free, zero-cost option that gives you full control.
+This guide walks you through setting up Sylas completely self-hosted, including your own Linear OAuth application. This is the free, zero-cost option that gives you full control.
 
-> **Tip:** If you're using Claude, Cursor, or any AI coding agent, ask it to read this file and help you implement all the steps. Example: *"Read docs/SELF_HOSTING.md and help me set up self-hosted Cyrus"*
+> **Tip:** If you're using Claude, Cursor, or any AI coding agent, ask it to read this file and help you implement all the steps. Example: *"Read docs/SELF_HOSTING.md and help me set up self-hosted Sylas"*
 
 ---
 
@@ -42,16 +42,16 @@ You'll complete these steps:
 1. Set up a public URL for webhooks
 2. Configure Claude Code authentication
 3. Create a Linear OAuth application
-4. Install Cyrus and complete your environment file
-5. Start Cyrus, authorize with Linear, and add repositories
+4. Install Sylas and complete your environment file
+5. Start Sylas, authorize with Linear, and add repositories
 
-> **Tip:** Cyrus automatically loads environment variables from `~/.cyrus/.env` on startup. You can override this path with `cyrus --env-file=/path/to/your/env`.
+> **Tip:** Sylas automatically loads environment variables from `~/.sylas/.env` on startup. You can override this path with `sylas --env-file=/path/to/your/env`.
 
 ---
 
 ## Step 1: Set Up Public URL
 
-Linear needs to send webhooks to your Cyrus instance. Choose one option:
+Linear needs to send webhooks to your Sylas instance. Choose one option:
 
 | Option | Best For | Persistence |
 |--------|----------|-------------|
@@ -61,14 +61,14 @@ Linear needs to send webhooks to your Cyrus instance. Choose one option:
 | Reverse proxy (nginx/caddy) | Existing infrastructure | Permanent URL |
 
 You'll need:
-- A public URL (e.g., `https://cyrus.yourdomain.com`)
+- A public URL (e.g., `https://sylas.yourdomain.com`)
 - The URL must be accessible from the internet
 
 ---
 
 ## Step 2: Configure Claude Code Authentication
 
-Cyrus needs Claude Code credentials. Choose one option and add it to your env file (`~/.cyrus/.env`):
+Sylas needs Claude Code credentials. Choose one option and add it to your env file (`~/.sylas/.env`):
 
 **Option A: API Key** (recommended)
 ```bash
@@ -107,8 +107,8 @@ For Vertex AI, Azure, AWS Bedrock, and other providers, see the [Third-Party Int
 1. Click **Create new OAuth Application** button
 
 2. Fill in the form:
-   - **Name:** `Cyrus`
-   - **Description:** `Self-hosted Cyrus agent for automated development`
+   - **Name:** `Sylas`
+   - **Description:** `Self-hosted Sylas agent for automated development`
    - **Callback URLs:** `https://your-public-url.com/callback`
 
 3. **Enable Client credentials** toggle
@@ -118,7 +118,7 @@ For Vertex AI, Azure, AWS Bedrock, and other providers, see the [Third-Party Int
 5. **Configure Webhook Settings:**
    - **Webhook URL:** `https://your-public-url.com/webhook`
    - **App events** - Check these boxes:
-     - **Agent session events** (REQUIRED - makes Cyrus appear as agent)
+     - **Agent session events** (REQUIRED - makes Sylas appear as agent)
      - **Inbox notifications** (recommended)
      - **Permission changes** (recommended)
 
@@ -134,7 +134,7 @@ After saving, copy these values:
 
 ### 3.4 Add to Environment File
 
-Add these to your env file (`~/.cyrus/.env`):
+Add these to your env file (`~/.sylas/.env`):
 
 ```bash
 # Linear OAuth configuration
@@ -146,23 +146,23 @@ LINEAR_WEBHOOK_SECRET=lin_whs_s56dlmfhg72038474nmfojhsn7
 
 ---
 
-## Step 4: Install and Configure Cyrus
+## Step 4: Install and Configure Sylas
 
-### 4.1 Install Cyrus
+### 4.1 Install Sylas
 
 ```bash
-npm install -g cyrus-ai
+npm install -g sylas-ai
 ```
 
 ### 4.2 Complete Your Environment File
 
-Your env file (`~/.cyrus/.env`) should now contain:
+Your env file (`~/.sylas/.env`) should now contain:
 
 ```bash
 # Server configuration
 LINEAR_DIRECT_WEBHOOKS=true
-CYRUS_BASE_URL=https://your-public-url.com
-CYRUS_SERVER_PORT=3456
+SYLAS_BASE_URL=https://your-public-url.com
+SYLAS_SERVER_PORT=3456
 
 # Linear OAuth
 LINEAR_CLIENT_ID=your_client_id
@@ -184,7 +184,7 @@ ANTHROPIC_API_KEY=your-api-key
 ### 5.1 Authorize with Linear
 
 ```bash
-cyrus self-auth
+sylas self-auth
 ```
 
 This will:
@@ -195,35 +195,35 @@ This will:
 ### 5.2 Add a Repository
 
 ```bash
-cyrus self-add-repo https://github.com/yourorg/yourrepo.git
+sylas self-add-repo https://github.com/yourorg/yourrepo.git
 ```
 
-This clones the repository to `~/.cyrus/repos/` and configures it with your Linear workspace credentials.
+This clones the repository to `~/.sylas/repos/` and configures it with your Linear workspace credentials.
 
 For multiple workspaces, specify which one:
 ```bash
-cyrus self-add-repo https://github.com/yourorg/yourrepo.git "My Workspace"
+sylas self-add-repo https://github.com/yourorg/yourrepo.git "My Workspace"
 ```
 
-You can run `cyrus self-add-repo` at any time, even while Cyrus is running. No restart is required—Cyrus will automatically pick up the new repository configuration.
+You can run `sylas self-add-repo` at any time, even while Sylas is running. No restart is required—Sylas will automatically pick up the new repository configuration.
 
-### 5.3 Start Cyrus
+### 5.3 Start Sylas
 
-Once authorization is complete and repositories are added, start Cyrus:
+Once authorization is complete and repositories are added, start Sylas:
 
 ```bash
-cyrus
+sylas
 ```
 
-Cyrus automatically loads `~/.cyrus/.env` on startup. You'll see Cyrus start up and show logs.
+Sylas automatically loads `~/.sylas/.env` on startup. You'll see Sylas start up and show logs.
 
-> **Note:** To use a different env file location, use `cyrus --env-file=/path/to/your/env`.
+> **Note:** To use a different env file location, use `sylas --env-file=/path/to/your/env`.
 
 ---
 
 ## Step 6: Set Up GitHub (Optional)
 
-For Cyrus to create pull requests, configure Git and GitHub CLI authentication.
+For Sylas to create pull requests, configure Git and GitHub CLI authentication.
 
 See the **[Git & GitHub Setup Guide](./GIT_GITHUB.md)** for complete instructions.
 
@@ -231,39 +231,39 @@ See the **[Git & GitHub Setup Guide](./GIT_GITHUB.md)** for complete instruction
 
 ## Running as a Service
 
-For 24/7 availability, run Cyrus as a persistent process.
+For 24/7 availability, run Sylas as a persistent process.
 
 ### Using tmux
 
 ```bash
-tmux new-session -s cyrus
-cyrus
+tmux new-session -s sylas
+sylas
 # Ctrl+B, D to detach
-# tmux attach -t cyrus to reattach
+# tmux attach -t sylas to reattach
 ```
 
 ### Using pm2
 
 ```bash
-pm2 start cyrus --name cyrus
+pm2 start sylas --name sylas
 pm2 save
 pm2 startup
 ```
 
 ### Using systemd (Linux)
 
-Create `/etc/systemd/system/cyrus.service`:
+Create `/etc/systemd/system/sylas.service`:
 
 ```ini
 [Unit]
-Description=Cyrus AI Agent
+Description=Sylas AI Agent
 After=network.target
 
 [Service]
 Type=simple
 User=your-user
-EnvironmentFile=/home/your-user/.cyrus/.env
-ExecStart=/usr/local/bin/cyrus
+EnvironmentFile=/home/your-user/.sylas/.env
+ExecStart=/usr/local/bin/sylas
 Restart=always
 
 [Install]
@@ -273,15 +273,15 @@ WantedBy=multi-user.target
 Then:
 
 ```bash
-sudo systemctl enable cyrus
-sudo systemctl start cyrus
+sudo systemctl enable sylas
+sudo systemctl start sylas
 ```
 
 ---
 
 ## Configuration
 
-Cyrus stores its configuration in `~/.cyrus/config.json`. You can customize tool permissions, issue routing rules, MCP server integrations, and label-based AI modes by editing this file. Cyrus watches the config file and automatically picks up changes—no restart required.
+Sylas stores its configuration in `~/.sylas/config.json`. You can customize tool permissions, issue routing rules, MCP server integrations, and label-based AI modes by editing this file. Sylas watches the config file and automatically picks up changes—no restart required.
 
 For detailed options, see the [Configuration File Reference](./CONFIG_FILE.md).
 
@@ -291,21 +291,21 @@ For detailed options, see the [Configuration File Reference](./CONFIG_FILE.md).
 
 ### OAuth Authorization Fails
 
-- Verify `CYRUS_BASE_URL` matches your Linear OAuth callback URL exactly
+- Verify `SYLAS_BASE_URL` matches your Linear OAuth callback URL exactly
 - Check that your public URL is accessible from the internet
 - Ensure all Linear environment variables are set
 
 ### Webhooks Not Received
 
-- Verify Linear webhook URL matches `CYRUS_BASE_URL/webhook`
-- Check Cyrus logs for incoming webhook attempts
+- Verify Linear webhook URL matches `SYLAS_BASE_URL/webhook`
+- Check Sylas logs for incoming webhook attempts
 - Ensure your public URL is accessible
 
 ### Repository Not Processing
 
-- Check that the repository is in your config (`~/.cyrus/config.json`)
-- Verify Linear tokens are valid with `cyrus check-tokens`
-- Ensure the issue is assigned to Cyrus in Linear
+- Check that the repository is in your config (`~/.sylas/config.json`)
+- Verify Linear tokens are valid with `sylas check-tokens`
+- Ensure the issue is assigned to Sylas in Linear
 
 ### Claude Code Not Working
 
@@ -317,10 +317,10 @@ For detailed options, see the [Configuration File Reference](./CONFIG_FILE.md).
 
 ## Development Mode
 
-If you're developing Cyrus from source:
+If you're developing Sylas from source:
 
 ```bash
-cd /path/to/cyrus
+cd /path/to/sylas
 pnpm install
 
 cd apps/cli
@@ -329,6 +329,6 @@ pnpm link --global
 # In a separate terminal
 pnpm dev
 
-# Then run cyrus normally
-cyrus
+# Then run sylas normally
+sylas
 ```

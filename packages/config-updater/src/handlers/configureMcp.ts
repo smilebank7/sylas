@@ -4,11 +4,11 @@ import type { ApiResponse, ConfigureMcpPayload } from "../types.js";
 
 /**
  * Handle MCP server configuration
- * Writes individual MCP config files to ~/.cyrus/mcp-{slug}.json
+ * Writes individual MCP config files to ~/.sylas/mcp-{slug}.json
  */
 export async function handleConfigureMcp(
 	payload: ConfigureMcpPayload,
-	cyrusHome: string,
+	sylasHome: string,
 ): Promise<ApiResponse> {
 	try {
 		// Validate payload
@@ -30,9 +30,9 @@ export async function handleConfigureMcp(
 			};
 		}
 
-		// Ensure the .cyrus directory exists
-		if (!existsSync(cyrusHome)) {
-			mkdirSync(cyrusHome, { recursive: true });
+		// Ensure the .sylas directory exists
+		if (!existsSync(sylasHome)) {
+			mkdirSync(sylasHome, { recursive: true });
 		}
 
 		const mcpFilesWritten: string[] = [];
@@ -40,7 +40,7 @@ export async function handleConfigureMcp(
 		// Write each MCP server configuration to its own file
 		for (const slug of serverSlugs) {
 			const serverConfig = payload.mcpServers[slug];
-			const mcpFilePath = join(cyrusHome, `mcp-${slug}.json`);
+			const mcpFilePath = join(sylasHome, `mcp-${slug}.json`);
 
 			// Perform environment variable substitution
 			const processedConfig = performEnvSubstitution(serverConfig);

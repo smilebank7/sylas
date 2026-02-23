@@ -4,20 +4,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Cyrus (Linear Claude Agent) is a monorepo JavaScript/TypeScript application that integrates Linear's issue tracking with Anthropic's Claude Code to automate software development tasks. The project is transitioning to an edge-proxy architecture that separates OAuth/webhook handling (proxy) from Claude processing (edge workers).
+Sylas is a self-hosted AI coding agent that integrates Linear's issue tracking with OpenCode (+ oh-my-opencode multi-agent orchestration) to automate software development tasks. Fork of Cyrus, reimagined for OpenCode runner.
 
 **Key capabilities:**
-- Monitors Linear issues assigned to a specific user
+- Monitors Linear issues assigned to it
 - Creates isolated Git worktrees for each issue
-- Runs Claude Code sessions to process issues
-- Posts responses back to Linear as comments
-- Maintains conversation continuity using the `--continue` flag
-- Supports edge worker mode for distributed processing
+- Runs OpenCode sessions with oh-my-opencode plugin (Sisyphus/Opus multi-agent)
+- Streams real-time activity updates back to Linear
+- Session continuity via `--session` flag
+- Full-delegation mode (single session, no subroutine splitting)
 
 
-## How Cyrus Works
+## How Sylas Works
 
-When a Linear issue is assigned to Cyrus, the following sequence occurs:
+When a Linear issue is assigned to Sylas, the following sequence occurs:
 
 1. **Issue Detection & Routing**: The EdgeWorker receives a webhook from Linear and routes the issue to the appropriate repository based on configured patterns or workspace catch-all rules.
 
@@ -53,30 +53,30 @@ A typical session flow:
 
 ### Test Drives
 
-To see Cyrus in action, refer to the test drives in `apps/f1/test-drives/`. These documents showcase real interactions demonstrating:
+To see Sylas in action, refer to the test drives in `apps/f1/test-drives/`. These documents showcase real interactions demonstrating:
 - How issues are processed end-to-end
 - Mid-implementation prompting in action
 - Subroutine transitions and activity logging
 - Final repository state after completion
 
-The F1 (Formula 1) testing framework provides a controlled environment to test Cyrus without affecting production Linear workspaces.
+The F1 (Formula 1) testing framework provides a controlled environment to test Sylas without affecting production Linear workspaces.
 
 CRITICAL: you must use the f1 test drive protocol during the 'testing and validation' stage of any major work undertaking. You CAN also use it in development situations where you want to test drive the version of the product that you're working on.
 
 ## Linear Webhooks Reference
 
-Cyrus processes Linear webhooks to respond to events like issue assignments, user prompts, and issue updates. The Linear SDK and webhook schemas are documented at:
+Sylas processes Linear webhooks to respond to events like issue assignments, user prompts, and issue updates. The Linear SDK and webhook schemas are documented at:
 
 - **EntityWebhookPayload**: https://studio.apollographql.com/public/Linear-Webhooks/variant/current/schema/reference/objects/EntityWebhookPayload
 - **DataWebhookPayload**: https://studio.apollographql.com/public/Linear-Webhooks/variant/current/schema/reference/unions/DataWebhookPayload
 - **IssueWebhookPayload**: https://studio.apollographql.com/public/Linear-Webhooks/variant/current/schema/reference/objects/IssueWebhookPayload
 
 Key webhook types handled:
-- `AgentSessionEvent` (created/prompted) - When issues are assigned to Cyrus or users send prompts
+- `AgentSessionEvent` (created/prompted) - When issues are assigned to Sylas or users send prompts
 - `AppUserNotification` (issueUnassignedFromYou) - When issues are unassigned
 - `Issue` (update with title/description changes) - When issue title or description is modified
 
-The `EntityWebhookPayload` contains an `updatedFrom` field that holds previous values of changed properties, enabling Cyrus to detect what changed and compare old vs new values.
+The `EntityWebhookPayload` contains an `updatedFrom` field that holds previous values of changed properties, enabling Sylas to detect what changed and compare old vs new values.
 
 ## Working with SDKs
 
@@ -150,7 +150,7 @@ When implementing a new runner/harness (for example Codex, Gemini, OpenCode, or 
 - Validate `tools`, `allowedTools`, and `disallowedTools` semantics for the SDK.
 - Validate approval/sandbox behavior for tool execution.
 - Verify tool calls produce both start and completion signals.
-- For providers that rely on static/project config files (for example Cursor CLI), implement a permission translation layer from Cyrus/Claude tool names to provider-native permission tokens and write that config before session start. This must support subroutine-time updates when allowed/disallowed tools change. For Cursor MCP servers, pre-enable them before session start (`agent mcp list` + `agent mcp enable <server>` per server) so tools are available in headless runs. When using Cursor in Cyrus, only MCP servers configured in `.cursor/mcp.json` should be treated as project MCP config; use Cursor's MCP config-location and file-format docs as the source of truth: https://cursor.com/docs/context/mcp#configuration-locations. For broad file permissions, map wildcard `Read(**)` / `Write(**)` to workspace-scoped patterns (for example `Read(./**)` / `Write(./**)`) to avoid unintentionally permitting absolute system paths. Reference: https://cursor.com/docs/cli/reference/permissions
+- For providers that rely on static/project config files (for example Cursor CLI), implement a permission translation layer from Sylas/Claude tool names to provider-native permission tokens and write that config before session start. This must support subroutine-time updates when allowed/disallowed tools change. For Cursor MCP servers, pre-enable them before session start (`agent mcp list` + `agent mcp enable <server>` per server) so tools are available in headless runs. When using Cursor in Sylas, only MCP servers configured in `.cursor/mcp.json` should be treated as project MCP config; use Cursor's MCP config-location and file-format docs as the source of truth: https://cursor.com/docs/context/mcp#configuration-locations. For broad file permissions, map wildcard `Read(**)` / `Write(**)` to workspace-scoped patterns (for example `Read(./**)` / `Write(./**)`) to avoid unintentionally permitting absolute system paths. Reference: https://cursor.com/docs/cli/reference/permissions
 
 ### 6) Prompt Streaming Input
 
@@ -205,7 +205,7 @@ Codex emitted tool activity at `item.started`/`item.completed` events, but those
 
 ### Cursor Integration Lesson Learned
 
-Cursor CLI permissions are enforced from config (`~/.cursor/cli-config.json` or `<project>/.cursor/cli.json`) instead of dynamic per-request tool allowlists. For Cursor-like providers, do not rely on dynamic SDK tool constraints alone—add a translation layer (for example `mcp__server__tool` -> `Mcp(server:tool)`, `Bash(...)` -> `Shell(...)`) and sync project permissions before each run and between subroutines. Also pre-enable MCP servers via `agent mcp list` + `agent mcp enable <server>` using both project-listed and runner-configured server names so headless sessions can invoke MCP tools immediately. In Cyrus Cursor runs, treat `.cursor/mcp.json` as the project MCP source and follow Cursor's configuration-location and file-syntax docs (these differ from Claude's MCP interpretation): https://cursor.com/docs/context/mcp#configuration-locations. Use workspace-scoped wildcard file permissions (`Read(./**)`, `Write(./**)`) rather than unscoped `Read(**)` / `Write(**)` in translation defaults. Reference: https://cursor.com/docs/cli/reference/permissions
+Cursor CLI permissions are enforced from config (`~/.cursor/cli-config.json` or `<project>/.cursor/cli.json`) instead of dynamic per-request tool allowlists. For Cursor-like providers, do not rely on dynamic SDK tool constraints alone—add a translation layer (for example `mcp__server__tool` -> `Mcp(server:tool)`, `Bash(...)` -> `Shell(...)`) and sync project permissions before each run and between subroutines. Also pre-enable MCP servers via `agent mcp list` + `agent mcp enable <server>` using both project-listed and runner-configured server names so headless sessions can invoke MCP tools immediately. In Sylas Cursor runs, treat `.cursor/mcp.json` as the project MCP source and follow Cursor's configuration-location and file-syntax docs (these differ from Claude's MCP interpretation): https://cursor.com/docs/context/mcp#configuration-locations. Use workspace-scoped wildcard file permissions (`Read(./**)`, `Write(./**)`) rather than unscoped `Read(**)` / `Write(**)` in translation defaults. Reference: https://cursor.com/docs/cli/reference/permissions
 
 ## Navigating GitHub Repositories
 
@@ -234,7 +234,7 @@ Simply replace `github.com` with `uuithub.com` in any GitHub URL.
 The codebase follows a pnpm monorepo structure:
 
 ```
-cyrus/
+sylas/
 ├── apps/
 │   ├── cli/          # Main CLI application
 │   ├── electron/     # Future Electron GUI (in development)
@@ -334,7 +334,7 @@ pnpm test:watch  # Watch mode
 
 # Local development setup (link development version globally)
 pnpm build                    # Build all packages first
-pnpm uninstall cyrus-ai -g    # Remove published version
+pnpm uninstall sylas-ai -g    # Remove published version
 cd apps/cli                   # Navigate to CLI directory
 pnpm install -g .            # Install local version globally
 pnpm link -g .               # Link local development version
@@ -397,7 +397,7 @@ The agent automatically moves issues to the "started" state when assigned. Linea
    - Uses pnpm as package manager (v10.11.0)
    - TypeScript for all new packages
 
-3. **Git Worktrees**: When processing issues, the agent creates separate git worktrees. If a `cyrus-setup.sh` script exists in the repository root, it's executed in new worktrees for project-specific initialization.
+3. **Git Worktrees**: When processing issues, the agent creates separate git worktrees. If a `sylas-setup.sh` script exists in the repository root, it's executed in new worktrees for project-specific initialization.
 
 4. **Testing**: Uses Vitest for all packages. Run tests before committing changes.
 
@@ -409,7 +409,7 @@ When working on this codebase, follow these practices:
    - Update `CHANGELOG.md` under the `## [Unreleased]` section with your changes
    - Use appropriate subsections: `### Added`, `### Changed`, `### Fixed`, `### Removed`
    - Include brief, clear descriptions of what was changed and why
-   - **Include the PR number/link**: If the PR is already created, include the link (e.g., `([#123](https://github.com/ceedaragents/cyrus/pull/123))`). If not, create the PR first, then update the changelog with the link, commit, and push.
+   - **Include the PR number/link**: If the PR is already created, include the link (e.g., `([#123](https://github.com/smilebank7/sylas/pull/123))`). If not, create the PR first, then update the changelog with the link, commit, and push.
    - Run `pnpm test:packages` to ensure all package tests pass
    - Run `pnpm typecheck` to verify TypeScript compilation
    - Consider running `pnpm build` to ensure the build succeeds
@@ -421,7 +421,7 @@ When working on this codebase, follow these practices:
 
 3. **Changelog Format**:
    - Follow [Keep a Changelog](https://keepachangelog.com/) format
-   - **Focus only on end-user impact**: Write entries from the perspective of users running the `cyrus` CLI binary
+   - **Focus only on end-user impact**: Write entries from the perspective of users running the `sylas` CLI binary
    - Avoid technical implementation details, package names, or internal architecture changes
    - Be concise but descriptive about what users will experience differently
    - Group related changes together
@@ -469,7 +469,7 @@ The script will show:
 - Current user information
 - Issues in your Linear workspace
 
-This integration is automatically available in all Cyrus sessions - the EdgeWorker automatically configures the official Linear MCP server for each repository using its Linear token.
+This integration is automatically available in all Sylas sessions - the EdgeWorker automatically configures the official Linear MCP server for each repository using its Linear token.
 
 ## Publishing
 

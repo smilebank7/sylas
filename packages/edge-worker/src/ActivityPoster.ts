@@ -3,7 +3,7 @@ import type {
 	IIssueTrackerService,
 	ILogger,
 	RepositoryConfig,
-} from "cyrus-core";
+} from "sylas-core";
 
 export class ActivityPoster {
 	private issueTrackers: Map<string, IIssueTrackerService>;

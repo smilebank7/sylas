@@ -1,7 +1,7 @@
 {
-	"name": "cyrus-mcp-tools",
+	"name": "sylas-mcp-tools",
 	"version": "0.2.21",
-	"description": "Runner-neutral MCP tool servers for Cyrus",
+	"description": "Runner-neutral MCP tool servers for Sylas",
 	"type": "module",
 	"main": "dist/index.js",
 	"types": "dist/index.d.ts",

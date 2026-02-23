@@ -2,7 +2,7 @@ import type {
 	AgentRunnerConfig,
 	AgentSessionInfo,
 	SDKMessage,
-} from "cyrus-core";
+} from "sylas-core";
 
 export type CursorJsonEvent = Record<string, unknown>;
 

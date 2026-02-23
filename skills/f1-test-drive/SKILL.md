@@ -1,6 +1,6 @@
 ---
 name: f1-test-drive
-description: Orchestrate F1 test drives to validate the Cyrus agent system end-to-end across issue-tracker, EdgeWorker, and activity rendering.
+description: Orchestrate F1 test drives to validate the Sylas agent system end-to-end across issue-tracker, EdgeWorker, and activity rendering.
 ---
 
 # F1 Test Drive
@@ -31,20 +31,20 @@ Execute test drives that verify:
 
 2. Start F1 server:
    ```bash
-   CYRUS_PORT=3600 CYRUS_REPO_PATH=/tmp/f1-test-drive-<timestamp> bun run apps/f1/server.ts &
+   SYLAS_PORT=3600 SYLAS_REPO_PATH=/tmp/f1-test-drive-<timestamp> bun run apps/f1/server.ts &
    ```
 
 3. Verify server health:
    ```bash
-   CYRUS_PORT=3600 ./f1 ping
-   CYRUS_PORT=3600 ./f1 status
+   SYLAS_PORT=3600 ./f1 ping
+   SYLAS_PORT=3600 ./f1 status
    ```
 
 ### Phase 2: Issue-Tracker Verification
 
 1. Create test issue:
    ```bash
-   CYRUS_PORT=3600 ./f1 create-issue \
+   SYLAS_PORT=3600 ./f1 create-issue \
      --title "<issue title>" \
      --description "<issue description>"
    ```
@@ -55,12 +55,12 @@ Execute test drives that verify:
 
 1. Start agent session:
    ```bash
-   CYRUS_PORT=3600 ./f1 start-session --issue-id <issue-id>
+   SYLAS_PORT=3600 ./f1 start-session --issue-id <issue-id>
    ```
 
 2. Monitor activities:
    ```bash
-   CYRUS_PORT=3600 ./f1 view-session --session-id <session-id>
+   SYLAS_PORT=3600 ./f1 view-session --session-id <session-id>
    ```
 
 3. Verify:
@@ -77,14 +77,14 @@ Execute test drives that verify:
 
 2. Validate pagination behavior:
    ```bash
-   CYRUS_PORT=3600 ./f1 view-session --session-id <session-id> --limit 10 --offset 0
+   SYLAS_PORT=3600 ./f1 view-session --session-id <session-id> --limit 10 --offset 0
    ```
 
 ### Phase 5: Cleanup
 
 1. Stop active session:
    ```bash
-   CYRUS_PORT=3600 ./f1 stop-session --session-id <session-id>
+   SYLAS_PORT=3600 ./f1 stop-session --session-id <session-id>
    ```
 
 2. Stop background server process.

@@ -19,7 +19,7 @@ function formatContext(context: LogContext): string {
 }
 
 function parseLevelFromEnv(): LogLevel | undefined {
-	const envLevel = process.env.CYRUS_LOG_LEVEL?.toUpperCase();
+	const envLevel = process.env.SYLAS_LOG_LEVEL?.toUpperCase();
 	switch (envLevel) {
 		case "DEBUG":
 			return LogLevel.DEBUG;

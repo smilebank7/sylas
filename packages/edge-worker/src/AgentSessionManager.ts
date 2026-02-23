@@ -8,20 +8,20 @@ import type {
 	SDKStatusMessage,
 	SDKSystemMessage,
 	SDKUserMessage,
-} from "cyrus-claude-runner";
+} from "sylas-claude-runner";
 import {
 	AgentSessionStatus,
 	AgentSessionType,
-	type CyrusAgentSession,
-	type CyrusAgentSessionEntry,
 	createLogger,
 	type IAgentRunner,
 	type ILogger,
 	type IssueMinimal,
-	type SerializedCyrusAgentSession,
-	type SerializedCyrusAgentSessionEntry,
+	type SerializedSylasAgentSession,
+	type SerializedSylasAgentSessionEntry,
+	type SylasAgentSession,
+	type SylasAgentSessionEntry,
 	type Workspace,
-} from "cyrus-core";
+} from "sylas-core";
 import type { ProcedureAnalyzer } from "./procedures/ProcedureAnalyzer.js";
 import type { ValidationLoopMetadata } from "./procedures/types.js";
 import type { SharedApplicationServer } from "./SharedApplicationServer.js";
@@ -42,7 +42,7 @@ import {
 export interface AgentSessionManagerEvents {
 	subroutineComplete: (data: {
 		sessionId: string;
-		session: CyrusAgentSession;
+		session: SylasAgentSession;
 	}) => void;
 	/**
 	 * Emitted when validation fails and we need to run the validation-fixer
@@ -50,7 +50,7 @@ export interface AgentSessionManagerEvents {
 	 */
 	validationLoopIteration: (data: {
 		sessionId: string;
-		session: CyrusAgentSession;
+		session: SylasAgentSession;
 		/** The fixer prompt to run (already rendered with failure context) */
 		fixerPrompt: string;
 		/** Current iteration (1-based) */
@@ -63,7 +63,7 @@ export interface AgentSessionManagerEvents {
 	 */
 	validationLoopRerun: (data: {
 		sessionId: string;
-		session: CyrusAgentSession;
+		session: SylasAgentSession;
 		/** Current iteration (1-based) */
 		iteration: number;
 	}) => void;
@@ -93,8 +93,8 @@ export declare interface AgentSessionManager {
 export class AgentSessionManager extends EventEmitter {
 	private logger: ILogger;
 	private activitySink: IActivitySink;
-	private sessions: Map<string, CyrusAgentSession> = new Map();
-	private entries: Map<string, CyrusAgentSessionEntry[]> = new Map(); // Stores a list of session entries per each session by its id
+	private sessions: Map<string, SylasAgentSession> = new Map();
+	private entries: Map<string, SylasAgentSessionEntry[]> = new Map(); // Stores a list of session entries per each session by its id
 	private activeTasksBySession: Map<string, string> = new Map(); // Maps session ID to active Task tool use ID
 	private toolCallsByToolUseId: Map<string, { name: string; input: any }> =
 		new Map(); // Track tool calls by their tool_use_id
@@ -161,7 +161,7 @@ export class AgentSessionManager extends EventEmitter {
 		issueMinimal: IssueMinimal,
 		workspace: Workspace,
 		platform: "linear" | "github" | "slack" = "linear",
-	): CyrusAgentSession {
+	): SylasAgentSession {
 		const log = this.logger.withContext({
 			sessionId,
 			platform,
@@ -169,7 +169,7 @@ export class AgentSessionManager extends EventEmitter {
 		});
 		log.info(`Tracking session for issue ${issueId}`);
 
-		const agentSession: CyrusAgentSession = {
+		const agentSession: SylasAgentSession = {
 			id: sessionId,
 			// Only Linear sessions have a valid external session ID for posting activities
 			externalSessionId: platform === "linear" ? sessionId : undefined,
@@ -207,11 +207,11 @@ export class AgentSessionManager extends EventEmitter {
 		sessionId: string,
 		workspace: Workspace,
 		platform: string,
-	): CyrusAgentSession {
+	): SylasAgentSession {
 		const log = this.logger.withContext({ sessionId, platform });
 		log.info("Creating chat session");
 
-		const agentSession: CyrusAgentSession = {
+		const agentSession: SylasAgentSession = {
 			id: sessionId,
 			type: AgentSessionType.CommentThread,
 			status: AgentSessionStatus.Active,
@@ -284,7 +284,7 @@ export class AgentSessionManager extends EventEmitter {
 	private async createSessionEntry(
 		sessionId: string,
 		sdkMessage: SDKUserMessage | SDKAssistantMessage,
-	): Promise<CyrusAgentSessionEntry> {
+	): Promise<SylasAgentSessionEntry> {
 		// Extract tool info if this is an assistant message
 		const toolInfo =
 			sdkMessage.type === "assistant" ? this.extractToolInfo(sdkMessage) : null;
@@ -296,7 +296,7 @@ export class AgentSessionManager extends EventEmitter {
 		// Extract SDK error from assistant messages (e.g., rate_limit, billing_error)
 		// SDKAssistantMessage has optional `error?: SDKAssistantMessageError` field
 		// See: @anthropic-ai/claude-agent-sdk sdk.d.ts lines 1013-1022
-		// Evidence from ~/.cyrus/logs/CYGROW-348 session jsonl shows assistant messages with
+		// Evidence from ~/.sylas/logs/CYGROW-348 session jsonl shows assistant messages with
 		// "error":"rate_limit" field when usage limits are hit
 		const sdkError =
 			sdkMessage.type === "assistant" ? sdkMessage.error : undefined;
@@ -315,7 +315,7 @@ export class AgentSessionManager extends EventEmitter {
 							? "cursor"
 							: "claude";
 
-		const sessionEntry: CyrusAgentSessionEntry = {
+		const sessionEntry: SylasAgentSessionEntry = {
 			// Set the appropriate session ID based on runner type
 			...(runnerType === "opencode"
 				? { openCodeSessionId: sdkMessage.session_id }
@@ -478,7 +478,7 @@ export class AgentSessionManager extends EventEmitter {
 	 * Handle completion using procedure routing system
 	 */
 	private async handleProcedureCompletion(
-		session: CyrusAgentSession,
+		session: SylasAgentSession,
 		sessionId: string,
 		resultMessage: SDKResultMessage,
 	): Promise<void> {
@@ -659,7 +659,7 @@ export class AgentSessionManager extends EventEmitter {
 	 * Returns false if validation passed or max retries reached (continue with normal advancement)
 	 */
 	private async handleValidationLoopCompletion(
-		session: CyrusAgentSession,
+		session: SylasAgentSession,
 		sessionId: string,
 		resultMessage: SDKResultMessage,
 		_runnerSessionId: string,
@@ -790,7 +790,7 @@ export class AgentSessionManager extends EventEmitter {
 	 * Update validation loop state in session metadata
 	 */
 	private updateValidationLoopState(
-		session: CyrusAgentSession,
+		session: SylasAgentSession,
 		validationLoop: ValidationLoopMetadata,
 	): void {
 		if (!session.metadata) {
@@ -805,7 +805,7 @@ export class AgentSessionManager extends EventEmitter {
 	/**
 	 * Clear validation loop state from session metadata
 	 */
-	private clearValidationLoopState(session: CyrusAgentSession): void {
+	private clearValidationLoopState(session: SylasAgentSession): void {
 		if (session.metadata?.procedure) {
 			delete session.metadata.procedure.validationLoop;
 		}
@@ -922,7 +922,7 @@ export class AgentSessionManager extends EventEmitter {
 	private async updateSessionStatus(
 		sessionId: string,
 		status: AgentSessionStatus,
-		additionalMetadata?: Partial<CyrusAgentSession["metadata"]>,
+		additionalMetadata?: Partial<SylasAgentSession["metadata"]>,
 	): Promise<void> {
 		const session = this.sessions.get(sessionId);
 		if (!session) return;
@@ -969,7 +969,7 @@ export class AgentSessionManager extends EventEmitter {
 					? resultMessage.errors.join("\n")
 					: "";
 
-		const resultEntry: CyrusAgentSessionEntry = {
+		const resultEntry: SylasAgentSessionEntry = {
 			// Set the appropriate session ID based on runner type
 			...(runnerType === "opencode"
 				? { openCodeSessionId: resultMessage.session_id }
@@ -1097,7 +1097,7 @@ export class AgentSessionManager extends EventEmitter {
 	 * Extract tool result content and error status from session entry
 	 */
 	private extractToolResult(
-		entry: CyrusAgentSessionEntry,
+		entry: SylasAgentSessionEntry,
 	): { content: string; isError: boolean } | null {
 		// Check if we have the error status in metadata
 		const isError = entry.metadata?.toolResultError || false;
@@ -1112,7 +1112,7 @@ export class AgentSessionManager extends EventEmitter {
 	 * Sync session entry to external tracker (create AgentActivity)
 	 */
 	private async syncEntryToActivitySink(
-		entry: CyrusAgentSessionEntry,
+		entry: SylasAgentSessionEntry,
 		sessionId: string,
 	): Promise<void> {
 		const log = this.sessionLog(sessionId);
@@ -1565,21 +1565,21 @@ export class AgentSessionManager extends EventEmitter {
 	/**
 	 * Get session by ID
 	 */
-	getSession(sessionId: string): CyrusAgentSession | undefined {
+	getSession(sessionId: string): SylasAgentSession | undefined {
 		return this.sessions.get(sessionId);
 	}
 
 	/**
 	 * Get session entries by session ID
 	 */
-	getSessionEntries(sessionId: string): CyrusAgentSessionEntry[] {
+	getSessionEntries(sessionId: string): SylasAgentSessionEntry[] {
 		return this.entries.get(sessionId) || [];
 	}
 
 	/**
 	 * Get all active sessions
 	 */
-	getActiveSessions(): CyrusAgentSession[] {
+	getActiveSessions(): SylasAgentSession[] {
 		return Array.from(this.sessions.values()).filter(
 			(session) => session.status === AgentSessionStatus.Active,
 		);
@@ -1613,7 +1613,7 @@ export class AgentSessionManager extends EventEmitter {
 	/**
 	 * Resolve the issue ID from a session, checking issueContext first then deprecated issueId.
 	 */
-	private getSessionIssueId(session: CyrusAgentSession): string | undefined {
+	private getSessionIssueId(session: SylasAgentSession): string | undefined {
 		return session.issueContext?.issueId ?? session.issueId;
 	}
 
@@ -1630,7 +1630,7 @@ export class AgentSessionManager extends EventEmitter {
 	/**
 	 * Get sessions by issue ID
 	 */
-	getSessionsByIssueId(issueId: string): CyrusAgentSession[] {
+	getSessionsByIssueId(issueId: string): SylasAgentSession[] {
 		return Array.from(this.sessions.values()).filter(
 			(session) => this.getSessionIssueId(session) === issueId,
 		);
@@ -1639,7 +1639,7 @@ export class AgentSessionManager extends EventEmitter {
 	/**
 	 * Get active sessions by issue ID
 	 */
-	getActiveSessionsByIssueId(issueId: string): CyrusAgentSession[] {
+	getActiveSessionsByIssueId(issueId: string): SylasAgentSession[] {
 		return Array.from(this.sessions.values()).filter(
 			(session) =>
 				this.getSessionIssueId(session) === issueId &&
@@ -1651,7 +1651,7 @@ export class AgentSessionManager extends EventEmitter {
 	 * Get active sessions where the issue's branch name matches the given branch.
 	 * Useful for detecting when multiple sessions share the same worktree.
 	 */
-	getActiveSessionsByBranchName(branchName: string): CyrusAgentSession[] {
+	getActiveSessionsByBranchName(branchName: string): SylasAgentSession[] {
 		return Array.from(this.sessions.values()).filter(
 			(session) =>
 				session.status === AgentSessionStatus.Active &&
@@ -1662,7 +1662,7 @@ export class AgentSessionManager extends EventEmitter {
 	/**
 	 * Get all sessions
 	 */
-	getAllSessions(): CyrusAgentSession[] {
+	getAllSessions(): SylasAgentSession[] {
 		return Array.from(this.sessions.values());
 	}
 
@@ -1843,11 +1843,11 @@ export class AgentSessionManager extends EventEmitter {
 	 * Serialize Agent Session state for persistence
 	 */
 	serializeState(): {
-		sessions: Record<string, SerializedCyrusAgentSession>;
-		entries: Record<string, SerializedCyrusAgentSessionEntry[]>;
+		sessions: Record<string, SerializedSylasAgentSession>;
+		entries: Record<string, SerializedSylasAgentSessionEntry[]>;
 	} {
-		const sessions: Record<string, SerializedCyrusAgentSession> = {};
-		const entries: Record<string, SerializedCyrusAgentSessionEntry[]> = {};
+		const sessions: Record<string, SerializedSylasAgentSession> = {};
+		const entries: Record<string, SerializedSylasAgentSessionEntry[]> = {};
 
 		// Serialize sessions
 		for (const [sessionId, session] of this.sessions.entries()) {
@@ -1870,8 +1870,8 @@ export class AgentSessionManager extends EventEmitter {
 	 * Restore Agent Session state from serialized data
 	 */
 	restoreState(
-		serializedSessions: Record<string, SerializedCyrusAgentSession>,
-		serializedEntries: Record<string, SerializedCyrusAgentSessionEntry[]>,
+		serializedSessions: Record<string, SerializedSylasAgentSession>,
+		serializedEntries: Record<string, SerializedSylasAgentSessionEntry[]>,
 	): void {
 		// Clear existing state
 		this.sessions.clear();
@@ -1879,7 +1879,7 @@ export class AgentSessionManager extends EventEmitter {
 
 		// Restore sessions
 		for (const [sessionId, sessionData] of Object.entries(serializedSessions)) {
-			const session: CyrusAgentSession = {
+			const session: SylasAgentSession = {
 				...sessionData,
 			};
 			this.sessions.set(sessionId, session);
@@ -1887,7 +1887,7 @@ export class AgentSessionManager extends EventEmitter {
 
 		// Restore entries
 		for (const [sessionId, entriesData] of Object.entries(serializedEntries)) {
-			const sessionEntries: CyrusAgentSessionEntry[] = entriesData.map(
+			const sessionEntries: SylasAgentSessionEntry[] = entriesData.map(
 				(entryData) => ({
 					...entryData,
 				}),

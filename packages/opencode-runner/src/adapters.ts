@@ -2,7 +2,7 @@
  * OpenCode Event Adapters
  *
  * Converts OpenCode SSE events to SDKMessage format for compatibility
- * with the Cyrus infrastructure. Follows the adapter pattern used in gemini-runner.
+ * with the Sylas infrastructure. Follows the adapter pattern used in gemini-runner.
  *
  * @packageDocumentation
  */
@@ -28,7 +28,7 @@ import type {
 	SDKMessage,
 	SDKResultMessage,
 	SDKUserMessage,
-} from "cyrus-core";
+} from "sylas-core";
 
 // ============================================================================
 // Types
@@ -674,9 +674,9 @@ function cliToolUseToSDKMessage(
 // ============================================================================
 
 /**
- * Convert an OpenCode event to cyrus-core SDKMessage format.
+ * Convert an OpenCode event to sylas-core SDKMessage format.
  *
- * This adapter maps OpenCode's SSE events to the cyrus-core SDKMessage format,
+ * This adapter maps OpenCode's SSE events to the sylas-core SDKMessage format,
  * allowing OpenCodeRunner to implement the IAgentRunner interface.
  *
  * NOTE: This adapter is stateless for most events. For complete message
@@ -775,7 +775,7 @@ export function extractSessionId(event: Event): string | null {
 }
 
 /**
- * Create a Cyrus Core SDK UserMessage from a plain string prompt.
+ * Create a Sylas Core SDK UserMessage from a plain string prompt.
  *
  * Helper function to create properly formatted SDKUserMessage objects
  * for sending to OpenCode.

@@ -2,7 +2,7 @@
  * Issue Tracker Abstraction Layer
  *
  * This module provides a platform-agnostic interface for issue tracking operations.
- * It decouples the Cyrus codebase from Linear-specific implementations, enabling
+ * It decouples the Sylas codebase from Linear-specific implementations, enabling
  * support for multiple issue tracking platforms (Linear, GitHub, Jira, etc.).
  *
  * @module issue-tracker
@@ -10,7 +10,7 @@
  * @example
  * Basic usage:
  * ```typescript
- * import { IIssueTrackerService, Issue, Comment } from '@cyrus/core/issue-tracker';
+ * import { IIssueTrackerService, Issue, Comment } from '@sylas/core/issue-tracker';
  *
  * // Use the service interface (implementation provided elsewhere)
  * async function processIssue(service: IIssueTrackerService, issueId: string) {
@@ -27,7 +27,7 @@
  *   AgentEvent,
  *   isIssueAssignedEvent,
  *   isNewCommentEvent
- * } from '@cyrus/core/issue-tracker';
+ * } from '@sylas/core/issue-tracker';
  *
  * function handleWebhook(event: AgentEvent) {
  *   if (isIssueAssignedEvent(event)) {
@@ -88,8 +88,8 @@ export {
 // CLI adapters for F1 testing framework
 export * from "./adapters/index.js";
 
-// Linear adapters have been moved to cyrus-linear-event-transport package
-// Import them directly from that package instead of from cyrus-core
+// Linear adapters have been moved to sylas-linear-event-transport package
+// Import them directly from that package instead of from sylas-core
 
 // ============================================================================
 // MODULE METADATA

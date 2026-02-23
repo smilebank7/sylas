@@ -1,12 +1,12 @@
 import { readFile } from "node:fs/promises";
 import { LinearClient } from "@linear/sdk";
-import { ClaudeRunner } from "cyrus-claude-runner";
-import type { LinearAgentSessionCreatedWebhook } from "cyrus-core";
+import { ClaudeRunner } from "sylas-claude-runner";
+import type { LinearAgentSessionCreatedWebhook } from "sylas-core";
 import {
 	isAgentSessionCreatedWebhook,
 	isAgentSessionPromptedWebhook,
-} from "cyrus-core";
-import { LinearEventTransport } from "cyrus-linear-event-transport";
+} from "sylas-core";
+import { LinearEventTransport } from "sylas-linear-event-transport";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AgentSessionManager } from "../src/AgentSessionManager.js";
 import { EdgeWorker } from "../src/EdgeWorker.js";
@@ -22,13 +22,13 @@ vi.mock("fs/promises", () => ({
 }));
 
 // Mock dependencies
-vi.mock("cyrus-claude-runner");
-vi.mock("cyrus-codex-runner");
-vi.mock("cyrus-linear-event-transport");
+vi.mock("sylas-claude-runner");
+vi.mock("sylas-codex-runner");
+vi.mock("sylas-linear-event-transport");
 vi.mock("@linear/sdk");
 vi.mock("../src/SharedApplicationServer.js");
 vi.mock("../src/AgentSessionManager.js");
-vi.mock("cyrus-core", async (importOriginal) => {
+vi.mock("sylas-core", async (importOriginal) => {
 	const actual = (await importOriginal()) as any;
 	return {
 		...actual,
@@ -203,7 +203,7 @@ Issue: {{issue_identifier}}`;
 
 		mockConfig = {
 			proxyUrl: "http://localhost:3000",
-			cyrusHome: "/tmp/test-cyrus-home",
+			sylasHome: "/tmp/test-sylas-home",
 			repositories: [mockRepository],
 			handlers: {
 				createWorkspace: vi.fn().mockResolvedValue({
@@ -243,7 +243,7 @@ Issue: {{issue_identifier}}`;
 					team: { key: "TEST" },
 				},
 				comment: {
-					body: "@cyrus /label-based-prompt can you work on this issue?",
+					body: "@sylas /label-based-prompt can you work on this issue?",
 				},
 			},
 		};
@@ -286,7 +286,7 @@ Issue: {{issue_identifier}}`;
 					team: { key: "TEST" },
 				},
 				comment: {
-					body: "@cyrus can you help me with this issue?",
+					body: "@sylas can you help me with this issue?",
 				},
 			},
 		};
@@ -305,7 +305,7 @@ Issue: {{issue_identifier}}`;
 		// Should use mention prompt template
 		expect(capturedPrompt).toContain("You were mentioned in a Linear comment");
 		expect(capturedPrompt).toContain("<mention_comment>");
-		expect(capturedPrompt).toContain("@cyrus can you help me with this issue?");
+		expect(capturedPrompt).toContain("@sylas can you help me with this issue?");
 
 		// Should NOT contain label-based prompt template text
 		expect(capturedPrompt).not.toContain(
@@ -327,7 +327,7 @@ Issue: {{issue_identifier}}`;
 					team: { key: "TEST" },
 				},
 				comment: {
-					body: "@cyrus /label-based-prompt please debug this issue",
+					body: "@sylas /label-based-prompt please debug this issue",
 				},
 			},
 		};
@@ -363,7 +363,7 @@ Issue: {{issue_identifier}}`;
 					team: { key: "TEST" },
 				},
 				comment: {
-					body: "@cyrus please help with this bug",
+					body: "@sylas please help with this bug",
 				},
 			},
 		};

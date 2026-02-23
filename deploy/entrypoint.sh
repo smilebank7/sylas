@@ -1,6 +1,6 @@
 #!/bin/sh
 # =============================================================================
-# Cyrus Docker entrypoint
+# Sylas Docker entrypoint
 # Configures git credentials, OpenCode auth, and oh-my-opencode plugin.
 # =============================================================================
 

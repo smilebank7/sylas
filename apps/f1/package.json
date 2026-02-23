@@ -1,8 +1,8 @@
 {
-	"name": "cyrus-f1",
+	"name": "sylas-f1",
 	"version": "0.1.0",
 	"type": "module",
-	"description": "F1 Testing Framework CLI for Cyrus",
+	"description": "F1 Testing Framework CLI for Sylas",
 	"main": "dist/src/cli.js",
 	"types": "dist/src/cli.d.ts",
 	"bin": {
@@ -32,9 +32,9 @@
 	},
 	"dependencies": {
 		"commander": "^14.0.2",
-		"cyrus-claude-runner": "workspace:*",
-		"cyrus-core": "workspace:*",
-		"cyrus-edge-worker": "workspace:*"
+		"sylas-claude-runner": "workspace:*",
+		"sylas-core": "workspace:*",
+		"sylas-edge-worker": "workspace:*"
 	},
 	"devDependencies": {
 		"@types/node": "^20.0.0",

@@ -1,7 +1,7 @@
 {
-	"name": "cyrus-opencode-runner",
+	"name": "sylas-opencode-runner",
 	"version": "0.1.0",
-	"description": "OpenCode SDK integration and management for Cyrus",
+	"description": "OpenCode SDK integration and management for Sylas",
 	"type": "module",
 	"main": "dist/index.js",
 	"types": "dist/index.d.ts",
@@ -17,7 +17,7 @@
 	},
 	"dependencies": {
 		"@opencode-ai/sdk": "1.0.167",
-		"cyrus-core": "workspace:*",
+		"sylas-core": "workspace:*",
 		"zod": "^3.23.0"
 	},
 	"devDependencies": {

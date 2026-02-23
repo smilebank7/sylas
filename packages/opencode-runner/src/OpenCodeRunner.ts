@@ -22,7 +22,7 @@ import type {
 	SDKAssistantMessage,
 	SDKMessage,
 	SDKResultMessage,
-} from "cyrus-core";
+} from "sylas-core";
 import {
 	extractSessionId,
 	openCodeEventToSDKMessage,
@@ -56,7 +56,7 @@ export declare interface OpenCodeRunner {
  * @example
  * ```typescript
  * const runner = new OpenCodeRunner({
- *   cyrusHome: '/home/user/.cyrus',
+ *   sylasHome: '/home/user/.sylas',
  *   workingDirectory: '/path/to/repo',
  *   autoApprove: true,
  * });
@@ -73,7 +73,7 @@ export class OpenCodeRunner extends EventEmitter implements IAgentRunner {
 	private logStream: WriteStream | null = null;
 	private readableLogStream: WriteStream | null = null;
 	private messages: SDKMessage[] = [];
-	private cyrusHome: string;
+	private sylasHome: string;
 	private lastAssistantMessage: SDKAssistantMessage | null = null;
 	private lastAssistantInfo: AssistantMessage | null = null;
 	private formatter: IMessageFormatter;
@@ -83,7 +83,7 @@ export class OpenCodeRunner extends EventEmitter implements IAgentRunner {
 	constructor(config: OpenCodeRunnerConfig) {
 		super();
 		this.config = config;
-		this.cyrusHome = config.cyrusHome;
+		this.sylasHome = config.sylasHome;
 		this.formatter = new OpenCodeMessageFormatter();
 
 		if (config.onMessage)
@@ -444,7 +444,7 @@ export class OpenCodeRunner extends EventEmitter implements IAgentRunner {
 	 * Set up logging streams.
 	 */
 	private setupLogging(): void {
-		const logsDir = join(this.cyrusHome, "logs");
+		const logsDir = join(this.sylasHome, "logs");
 		const workspaceName =
 			this.config.workspaceName ||
 			(this.config.workingDirectory

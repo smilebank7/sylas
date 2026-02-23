@@ -1,6 +1,6 @@
 import type { ChildProcess } from "node:child_process";
 import { EventEmitter } from "node:events";
-import { StreamingPrompt } from "cyrus-core";
+import { StreamingPrompt } from "sylas-core";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { GeminiRunner } from "../src/GeminiRunner.js";
 import type {
@@ -142,7 +142,7 @@ describe("GeminiRunner", () => {
 	let processEmulator: ProcessEmulator;
 	const defaultConfig: GeminiRunnerConfig = {
 		workingDirectory: "/tmp/test",
-		cyrusHome: "/tmp/test-cyrus-home",
+		sylasHome: "/tmp/test-sylas-home",
 		model: "gemini-2.5-flash",
 	};
 

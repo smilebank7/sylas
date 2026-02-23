@@ -40,19 +40,19 @@ importers:
       commander:
         specifier: ^14.0.2
         version: 14.0.2
-      cyrus-claude-runner:
+      sylas-claude-runner:
         specifier: workspace:*
         version: link:../../packages/claude-runner
-      cyrus-cloudflare-tunnel-client:
+      sylas-cloudflare-tunnel-client:
         specifier: workspace:*
         version: link:../../packages/cloudflare-tunnel-client
-      cyrus-config-updater:
+      sylas-config-updater:
         specifier: workspace:*
         version: link:../../packages/config-updater
-      cyrus-core:
+      sylas-core:
         specifier: workspace:*
         version: link:../../packages/core
-      cyrus-edge-worker:
+      sylas-edge-worker:
         specifier: workspace:*
         version: link:../../packages/edge-worker
       dotenv:
@@ -101,13 +101,13 @@ importers:
       commander:
         specifier: ^14.0.2
         version: 14.0.2
-      cyrus-claude-runner:
+      sylas-claude-runner:
         specifier: workspace:*
         version: link:../../packages/claude-runner
-      cyrus-core:
+      sylas-core:
         specifier: workspace:*
         version: link:../../packages/core
-      cyrus-edge-worker:
+      sylas-edge-worker:
         specifier: workspace:*
         version: link:../../packages/edge-worker
     devDependencies:
@@ -132,7 +132,7 @@ importers:
       '@linear/sdk':
         specifier: ^64.0.0
         version: 64.0.0
-      cyrus-core:
+      sylas-core:
         specifier: workspace:*
         version: link:../core
       dotenv:
@@ -185,7 +185,7 @@ importers:
       '@openai/codex-sdk':
         specifier: ^0.98.0
         version: 0.98.0
-      cyrus-core:
+      sylas-core:
         specifier: workspace:*
         version: link:../core
     devDependencies:
@@ -201,7 +201,7 @@ importers:
 
   packages/config-updater:
     dependencies:
-      cyrus-core:
+      sylas-core:
         specifier: workspace:*
         version: link:../core
       fastify:
@@ -248,7 +248,7 @@ importers:
 
   packages/cursor-runner:
     dependencies:
-      cyrus-core:
+      sylas-core:
         specifier: workspace:*
         version: link:../core
     devDependencies:
@@ -273,43 +273,43 @@ importers:
       chokidar:
         specifier: ^4.0.3
         version: 4.0.3
-      cyrus-claude-runner:
+      sylas-claude-runner:
         specifier: workspace:*
         version: link:../claude-runner
-      cyrus-cloudflare-tunnel-client:
+      sylas-cloudflare-tunnel-client:
         specifier: workspace:*
         version: link:../cloudflare-tunnel-client
-      cyrus-codex-runner:
+      sylas-codex-runner:
         specifier: workspace:*
         version: link:../codex-runner
-      cyrus-config-updater:
+      sylas-config-updater:
         specifier: workspace:*
         version: link:../config-updater
-      cyrus-core:
+      sylas-core:
         specifier: workspace:*
         version: link:../core
-      cyrus-cursor-runner:
+      sylas-cursor-runner:
         specifier: workspace:*
         version: link:../cursor-runner
-      cyrus-gemini-runner:
+      sylas-gemini-runner:
         specifier: workspace:*
         version: link:../gemini-runner
-      cyrus-github-event-transport:
+      sylas-github-event-transport:
         specifier: workspace:*
         version: link:../github-event-transport
-      cyrus-linear-event-transport:
+      sylas-linear-event-transport:
         specifier: workspace:*
         version: link:../linear-event-transport
-      cyrus-mcp-tools:
+      sylas-mcp-tools:
         specifier: workspace:*
         version: link:../mcp-tools
-      cyrus-opencode-runner:
+      sylas-opencode-runner:
         specifier: workspace:*
         version: link:../opencode-runner
-      cyrus-simple-agent-runner:
+      sylas-simple-agent-runner:
         specifier: workspace:*
         version: link:../simple-agent-runner
-      cyrus-slack-event-transport:
+      sylas-slack-event-transport:
         specifier: workspace:*
         version: link:../slack-event-transport
       fastify:
@@ -352,13 +352,13 @@ importers:
       '@linear/sdk':
         specifier: ^60.0.0
         version: 60.0.0
-      cyrus-claude-runner:
+      sylas-claude-runner:
         specifier: workspace:*
         version: link:../claude-runner
-      cyrus-core:
+      sylas-core:
         specifier: workspace:*
         version: link:../core
-      cyrus-simple-agent-runner:
+      sylas-simple-agent-runner:
         specifier: workspace:*
         version: link:../simple-agent-runner
       dotenv:
@@ -389,7 +389,7 @@ importers:
 
   packages/github-event-transport:
     dependencies:
-      cyrus-core:
+      sylas-core:
         specifier: workspace:*
         version: link:../core
       fastify:
@@ -411,7 +411,7 @@ importers:
       '@linear/sdk':
         specifier: ^64.0.0
         version: 64.0.0
-      cyrus-core:
+      sylas-core:
         specifier: workspace:*
         version: link:../core
       fastify:
@@ -461,7 +461,7 @@ importers:
       '@opencode-ai/sdk':
         specifier: 1.0.167
         version: 1.0.167
-      cyrus-core:
+      sylas-core:
         specifier: workspace:*
         version: link:../core
       zod:
@@ -483,10 +483,10 @@ importers:
       '@anthropic-ai/claude-agent-sdk':
         specifier: ^0.2.34
         version: 0.2.47(zod@4.3.6)
-      cyrus-claude-runner:
+      sylas-claude-runner:
         specifier: workspace:*
         version: link:../claude-runner
-      cyrus-core:
+      sylas-core:
         specifier: workspace:*
         version: link:../core
     devDependencies:
@@ -502,7 +502,7 @@ importers:
 
   packages/slack-event-transport:
     dependencies:
-      cyrus-core:
+      sylas-core:
         specifier: workspace:*
         version: link:../core
       fastify:

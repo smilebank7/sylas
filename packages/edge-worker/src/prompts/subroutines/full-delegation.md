@@ -63,6 +63,6 @@ Use `+++Section Title\n...\n+++` for collapsible sections.
 
 ## Rules
 
-- Do NOT post Linear comments yourself — Cyrus handles that
+- Do NOT post Linear comments yourself — Sylas handles that
 - Do NOT touch the changelog unless the project's CLAUDE.md explicitly requires it as part of commits
 - Complete ALL phases. Your final message is what gets posted to Linear.

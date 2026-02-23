@@ -2,13 +2,13 @@
  * Types for Linear event transport
  */
 
-import type { AgentEvent, InternalMessage } from "cyrus-core";
 import type { FastifyInstance } from "fastify";
+import type { AgentEvent, InternalMessage } from "sylas-core";
 
 /**
  * Verification mode for Linear webhooks
  * - 'direct': Use LINEAR_WEBHOOK_SECRET for Linear signature verification
- * - 'proxy': Use CYRUS_API_KEY Bearer token for proxy authentication
+ * - 'proxy': Use SYLAS_API_KEY Bearer token for proxy authentication
  */
 export type VerificationMode = "direct" | "proxy";
 
@@ -20,7 +20,7 @@ export interface LinearEventTransportConfig {
 	fastifyServer: FastifyInstance;
 	/** Verification mode: 'direct' or 'proxy' */
 	verificationMode: VerificationMode;
-	/** Secret for verification (LINEAR_WEBHOOK_SECRET or CYRUS_API_KEY) */
+	/** Secret for verification (LINEAR_WEBHOOK_SECRET or SYLAS_API_KEY) */
 	secret: string;
 }
 

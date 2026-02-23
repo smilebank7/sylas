@@ -1,75 +1,43 @@
-# Cyrus
+# Sylas
 
-<div>
-  <a href="https://github.com/ceedaragents/cyrus/actions">
-    <img src="https://github.com/ceedaragents/cyrus/actions/workflows/ci.yml/badge.svg" alt="CI">
-  </a>
+Self-hosted AI coding agent for [Linear](https://linear.app). Monitors Linear issues assigned to it, creates isolated Git worktrees, runs [OpenCode](https://github.com/sst/opencode) sessions with [oh-my-opencode](https://github.com/nicepkg/oh-my-opencode) multi-agent orchestration, and streams detailed activity updates back to Linear.
 
-</div>
+## Overview
 
-[![Discord](https://img.shields.io/discord/1443747721910685792?label=Discord&logo=discord&logoColor=white)](https://discord.gg/prrtADHYTt)
+Sylas is a fork of [Cyrus](https://github.com/sonnytheai/cyrus) — reimagined to use **OpenCode** as the AI runner instead of Claude Code CLI, with full multi-agent support via the oh-my-opencode plugin (Sisyphus/Opus architecture).
 
-Your (Claude Code|Codex|Cursor|Gemini) powered (Linear|Github|Slack) agent. Cyrus monitors (Linear|Github) issues assigned to it, creates isolated Git worktrees for each issue, runs (Claude Code|Codex|Cursor|Gemini) sessions to process them, and streams detailed agent activity updates back to (Linear|Github), along with rich interactions like dropdown selects and approvals.
+### How It Works
 
-**Note:** Cyrus requires you to bring your own keys/billing for tokens.
+1. **Issue Detection**: Receives Linear webhooks when issues are assigned
+2. **Workspace Isolation**: Creates a dedicated Git worktree per issue
+3. **AI Processing**: Runs OpenCode sessions with oh-my-opencode for multi-agent orchestration
+4. **Activity Streaming**: Posts real-time thoughts and actions back to Linear
+5. **Session Continuity**: Resumes existing sessions when new comments are added
 
----
+## Deployment
 
-## Getting Started
-
-### Pro & Team Plans
-
-Configure Cyrus through the dashboard at [app.atcyrus.com](https://app.atcyrus.com).
-
-#### For self-hosted deployments
+Deployed via Docker with Traefik reverse proxy on `sylas.leejh.in`.
 
 ```bash
-# Install Cyrus
-npm install -g cyrus-ai
-
-# Authenticate with your token (provided during onboarding)
-cyrus auth <your-token>
+# Push to main triggers auto-deploy via GitHub Actions
+git push origin main
+# → Self-hosted runner builds GHCR image → SSH deploy to server
 ```
 
-For Cyrus to create pull requests, configure Git and GitHub CLI. See **[Git & GitHub Setup](./docs/GIT_GITHUB.md)**.
+See [`deploy/`](./deploy/) for Docker Compose, Dockerfile, and environment configuration.
 
-Keep Cyrus running as a persistent process:
+## Architecture
 
-- **tmux**: `tmux new -s cyrus` then run `cyrus` (Ctrl+B, D to detach)
-- **pm2**: `pm2 start cyrus --name cyrus`
-- **systemd**: See [Running as a Service](./docs/SELF_HOSTING.md#running-as-a-service)
+pnpm monorepo with edge-proxy architecture:
 
-#### For cloud-hosted deployments
-
-No installation required. Everything is managed through [app.atcyrus.com](https://app.atcyrus.com).
-
----
-
-### End-to-End Self-Hosted (Community)
-
-Zero cost option. This requires hosting everything yourself, including your own Linear OAuth app.
-
-Follow the complete **[End-to-End Community Guide](./docs/SELF_HOSTING.md)**.
-
----
-
-## Documentation
-
-- **[End-to-End Community Guide](./docs/SELF_HOSTING.md)** - Complete community manual setup
-- **[Git & GitHub Setup](./docs/GIT_GITHUB.md)** - Git and GitHub CLI configuration for PRs
-- **[Configuration Reference](./docs/CONFIG_FILE.md)** - Detailed config.json options
-- **[Cloudflare Tunnel Setup](./docs/CLOUDFLARE_TUNNEL.md)** - Expose your local instance
-- **[Setup Scripts](./docs/SETUP_SCRIPTS.md)** - Repository and global initialization scripts
-
----
+```
+packages/
+├── edge-worker/       # Core: webhook handling, session management, prompt assembly
+├── opencode-runner/   # OpenCode CLI execution wrapper
+├── core/              # Shared types and session management
+└── ...                # Other runner packages (claude, codex, gemini, cursor)
+```
 
 ## License
 
-This project is licensed under the Apache 2.0 license - see the [LICENSE](LICENSE) file for details.
-
-## Credits
-
-This project builds on the technologies built by the awesome teams at Linear, and Claude by Anthropic:
-
-- [Linear API](https://linear.app/developers)
-- [Anthropic Claude Code](https://www.claude.com/product/claude-code)
+[MIT](LICENSE)

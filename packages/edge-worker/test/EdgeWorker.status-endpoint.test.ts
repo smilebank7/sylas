@@ -12,10 +12,10 @@ vi.mock("fs/promises", () => ({
 }));
 
 // Mock dependencies
-vi.mock("cyrus-claude-runner");
-vi.mock("cyrus-codex-runner");
-vi.mock("cyrus-gemini-runner");
-vi.mock("cyrus-linear-event-transport");
+vi.mock("sylas-claude-runner");
+vi.mock("sylas-codex-runner");
+vi.mock("sylas-gemini-runner");
+vi.mock("sylas-linear-event-transport");
 vi.mock("@linear/sdk");
 vi.mock("../src/SharedApplicationServer.js", () => ({
 	SharedApplicationServer: vi.fn().mockImplementation(() => ({
@@ -40,7 +40,7 @@ vi.mock("../src/AgentSessionManager.js", () => ({
 		emit: vi.fn(), // EventEmitter method
 	})),
 }));
-vi.mock("cyrus-core", async (importOriginal) => {
+vi.mock("sylas-core", async (importOriginal) => {
 	const actual = (await importOriginal()) as any;
 	return {
 		...actual,
@@ -93,7 +93,7 @@ describe("EdgeWorker - Status Endpoint", () => {
 
 		mockConfig = {
 			platform: "linear",
-			cyrusHome: "/test/.cyrus",
+			sylasHome: "/test/.sylas",
 			repositories: [mockRepository],
 		};
 	});
@@ -260,7 +260,7 @@ describe("EdgeWorker - Status Endpoint", () => {
 			edgeWorker = new EdgeWorker(mockConfig);
 
 			// Mock isIssueUnassignedWebhook to return true and make the handler throw
-			const { isIssueUnassignedWebhook } = await import("cyrus-core");
+			const { isIssueUnassignedWebhook } = await import("sylas-core");
 			vi.mocked(isIssueUnassignedWebhook).mockReturnValue(true);
 
 			// Mock the handler to throw

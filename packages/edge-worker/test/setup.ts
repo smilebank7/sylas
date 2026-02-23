@@ -1,13 +1,13 @@
 import { mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { SDKMessage } from "cyrus-claude-runner";
+import type { SDKMessage } from "sylas-claude-runner";
 import { vi } from "vitest";
 
 // Keep Claude SDK debug output inside the test workspace to avoid HOME write restrictions.
 const claudeConfigDir =
 	process.env.CLAUDE_CONFIG_DIR ??
-	join(tmpdir(), "cyrus-edge-worker-test-claude");
+	join(tmpdir(), "sylas-edge-worker-test-claude");
 process.env.CLAUDE_CONFIG_DIR = claudeConfigDir;
 mkdirSync(join(claudeConfigDir, "debug"), { recursive: true });
 

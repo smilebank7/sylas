@@ -1,7 +1,7 @@
 import { LinearClient } from "@linear/sdk";
-import { ClaudeRunner } from "cyrus-claude-runner";
-import { LinearEventTransport } from "cyrus-linear-event-transport";
-import { createCyrusToolsServer } from "cyrus-mcp-tools";
+import { ClaudeRunner } from "sylas-claude-runner";
+import { LinearEventTransport } from "sylas-linear-event-transport";
+import { createSylasToolsServer } from "sylas-mcp-tools";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AgentSessionManager } from "../src/AgentSessionManager.js";
 import { EdgeWorker } from "../src/EdgeWorker.js";
@@ -10,14 +10,14 @@ import type { EdgeWorkerConfig, RepositoryConfig } from "../src/types.js";
 
 // Mock all dependencies
 vi.mock("fs/promises");
-vi.mock("cyrus-claude-runner");
-vi.mock("cyrus-mcp-tools");
-vi.mock("cyrus-codex-runner");
-vi.mock("cyrus-linear-event-transport");
+vi.mock("sylas-claude-runner");
+vi.mock("sylas-mcp-tools");
+vi.mock("sylas-codex-runner");
+vi.mock("sylas-linear-event-transport");
 vi.mock("@linear/sdk");
 vi.mock("../src/SharedApplicationServer.js");
 vi.mock("../src/AgentSessionManager.js");
-vi.mock("cyrus-core", async (importOriginal) => {
+vi.mock("sylas-core", async (importOriginal) => {
 	const actual = (await importOriginal()) as any;
 	return {
 		...actual,
@@ -60,8 +60,8 @@ describe("EdgeWorker - Feedback Delivery", () => {
 		mockOnFeedbackDelivery = vi.fn();
 		mockOnSessionCreated = vi.fn();
 
-		// Mock createCyrusToolsServer to return a proper structure
-		vi.mocked(createCyrusToolsServer).mockImplementation((_token, options) => {
+		// Mock createSylasToolsServer to return a proper structure
+		vi.mocked(createSylasToolsServer).mockImplementation((_token, options) => {
 			// Capture the callbacks
 			if (options?.onFeedbackDelivery) {
 				mockOnFeedbackDelivery = options.onFeedbackDelivery;
@@ -155,7 +155,7 @@ describe("EdgeWorker - Feedback Delivery", () => {
 
 		mockConfig = {
 			proxyUrl: "http://localhost:3000",
-			cyrusHome: "/tmp/test-cyrus-home",
+			sylasHome: "/tmp/test-sylas-home",
 			repositories: [mockRepository],
 			handlers: {
 				createWorkspace: vi.fn().mockResolvedValue({
@@ -198,7 +198,7 @@ describe("EdgeWorker - Feedback Delivery", () => {
 				"Please revise your approach and focus on the error handling";
 			const parentSessionId = "parent-session-123";
 
-			// Build MCP config which will trigger createCyrusToolsServer
+			// Build MCP config which will trigger createSylasToolsServer
 			const _mcpConfig = (edgeWorker as any).buildMcpConfig(
 				mockRepository,
 				parentSessionId,
@@ -260,7 +260,7 @@ describe("EdgeWorker - Feedback Delivery", () => {
 			const childSessionId = "child-session-456";
 			const feedbackMessage = "Test feedback without known parent";
 
-			// Build MCP config which will trigger createCyrusToolsServer
+			// Build MCP config which will trigger createSylasToolsServer
 			const _mcpConfig = (edgeWorker as any).buildMcpConfig(
 				mockRepository,
 				undefined, // No parent session ID
@@ -293,7 +293,7 @@ describe("EdgeWorker - Feedback Delivery", () => {
 			const childSessionId = "nonexistent-child-session";
 			const feedbackMessage = "This should fail";
 
-			// Build MCP config which will trigger createCyrusToolsServer
+			// Build MCP config which will trigger createSylasToolsServer
 			const _mcpConfig = (edgeWorker as any).buildMcpConfig(
 				mockRepository,
 				"parent-session-123",
@@ -322,7 +322,7 @@ describe("EdgeWorker - Feedback Delivery", () => {
 			const childSessionId = "child-session-456";
 			const feedbackMessage = "This should also fail";
 
-			// Build MCP config which will trigger createCyrusToolsServer
+			// Build MCP config which will trigger createSylasToolsServer
 			const _mcpConfig = (edgeWorker as any).buildMcpConfig(
 				mockRepository,
 				"parent-session-123",
@@ -349,7 +349,7 @@ describe("EdgeWorker - Feedback Delivery", () => {
 			const childSessionId = "child-session-456";
 			const feedbackMessage = "This will cause resume to fail";
 
-			// Build MCP config which will trigger createCyrusToolsServer
+			// Build MCP config which will trigger createSylasToolsServer
 			const _mcpConfig = (edgeWorker as any).buildMcpConfig(
 				mockRepository,
 				"parent-session-123",
@@ -406,7 +406,7 @@ describe("EdgeWorker - Feedback Delivery", () => {
 			const childSessionId = "child-session-456";
 			const feedbackMessage = "Test feedback across repositories";
 
-			// Build MCP config which will trigger createCyrusToolsServer
+			// Build MCP config which will trigger createSylasToolsServer
 			const _mcpConfig = (edgeWorker as any).buildMcpConfig(
 				mockRepository,
 				"parent-session-123",
@@ -434,7 +434,7 @@ describe("EdgeWorker - Feedback Delivery", () => {
 		});
 	});
 
-	describe("Integration with cyrus-tools server", () => {
+	describe("Integration with sylas-tools server", () => {
 		it("should properly configure feedback delivery callback in MCP config", () => {
 			// Arrange
 			const parentSessionId = "parent-session-123";
@@ -446,10 +446,10 @@ describe("EdgeWorker - Feedback Delivery", () => {
 			);
 
 			// Assert
-			expect(_mcpConfig).toHaveProperty("cyrus-tools");
+			expect(_mcpConfig).toHaveProperty("sylas-tools");
 
-			// Verify createCyrusToolsServer was called with correct options
-			expect(createCyrusToolsServer).toHaveBeenCalledWith(
+			// Verify createSylasToolsServer was called with correct options
+			expect(createSylasToolsServer).toHaveBeenCalledWith(
 				mockRepository.linearToken,
 				expect.objectContaining({
 					parentSessionId,
@@ -463,54 +463,54 @@ describe("EdgeWorker - Feedback Delivery", () => {
 			expect(mockOnSessionCreated).toBeDefined();
 		});
 
-		it("should include CYRUS_API_KEY as Authorization header for cyrus-tools MCP config", () => {
-			const previousApiKey = process.env.CYRUS_API_KEY;
-			process.env.CYRUS_API_KEY = "test-cyrus-api-key";
+		it("should include SYLAS_API_KEY as Authorization header for sylas-tools MCP config", () => {
+			const previousApiKey = process.env.SYLAS_API_KEY;
+			process.env.SYLAS_API_KEY = "test-sylas-api-key";
 
 			try {
 				const mcpConfig = (edgeWorker as any).buildMcpConfig(
 					mockRepository,
 					"parent-session-123",
 				);
-				const cyrusToolsConfig = mcpConfig["cyrus-tools"] as {
+				const sylasToolsConfig = mcpConfig["sylas-tools"] as {
 					headers?: Record<string, string>;
 				};
 
-				expect(cyrusToolsConfig.headers?.Authorization).toBe(
-					"Bearer test-cyrus-api-key",
+				expect(sylasToolsConfig.headers?.Authorization).toBe(
+					"Bearer test-sylas-api-key",
 				);
 			} finally {
 				if (previousApiKey === undefined) {
-					delete process.env.CYRUS_API_KEY;
+					delete process.env.SYLAS_API_KEY;
 				} else {
-					process.env.CYRUS_API_KEY = previousApiKey;
+					process.env.SYLAS_API_KEY = previousApiKey;
 				}
 			}
 		});
 
-		it("should validate cyrus-tools MCP Authorization header against CYRUS_API_KEY", () => {
-			const previousApiKey = process.env.CYRUS_API_KEY;
-			process.env.CYRUS_API_KEY = "test-cyrus-api-key";
+		it("should validate sylas-tools MCP Authorization header against SYLAS_API_KEY", () => {
+			const previousApiKey = process.env.SYLAS_API_KEY;
+			process.env.SYLAS_API_KEY = "test-sylas-api-key";
 
 			try {
 				expect(
-					(edgeWorker as any).isCyrusToolsMcpAuthorizationValid(
-						"Bearer test-cyrus-api-key",
+					(edgeWorker as any).isSylasToolsMcpAuthorizationValid(
+						"Bearer test-sylas-api-key",
 					),
 				).toBe(true);
 				expect(
-					(edgeWorker as any).isCyrusToolsMcpAuthorizationValid(
+					(edgeWorker as any).isSylasToolsMcpAuthorizationValid(
 						"Bearer wrong-key",
 					),
 				).toBe(false);
 				expect(
-					(edgeWorker as any).isCyrusToolsMcpAuthorizationValid(undefined),
+					(edgeWorker as any).isSylasToolsMcpAuthorizationValid(undefined),
 				).toBe(false);
 			} finally {
 				if (previousApiKey === undefined) {
-					delete process.env.CYRUS_API_KEY;
+					delete process.env.SYLAS_API_KEY;
 				} else {
-					process.env.CYRUS_API_KEY = previousApiKey;
+					process.env.SYLAS_API_KEY = previousApiKey;
 				}
 			}
 		});

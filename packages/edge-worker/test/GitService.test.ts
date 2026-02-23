@@ -39,19 +39,19 @@ describe("GitService", () => {
 					"HEAD abc123def456",
 					"branch refs/heads/main",
 					"",
-					"worktree /home/user/.cyrus/worktrees/ENG-97",
+					"worktree /home/user/.sylas/worktrees/ENG-97",
 					"HEAD 789abc012def",
-					"branch refs/heads/cyrustester/eng-97-fix-shader",
+					"branch refs/heads/sylastester/eng-97-fix-shader",
 					"",
 				].join("\n"),
 			);
 
 			const result = gitService.findWorktreeByBranch(
-				"cyrustester/eng-97-fix-shader",
+				"sylastester/eng-97-fix-shader",
 				"/home/user/repo",
 			);
 
-			expect(result).toBe("/home/user/.cyrus/worktrees/ENG-97");
+			expect(result).toBe("/home/user/.sylas/worktrees/ENG-97");
 		});
 
 		it("returns null when the branch is not found", () => {
@@ -90,7 +90,7 @@ describe("GitService", () => {
 					"HEAD abc123def456",
 					"bare",
 					"",
-					"worktree /home/user/.cyrus/worktrees/ENG-97",
+					"worktree /home/user/.sylas/worktrees/ENG-97",
 					"HEAD 789abc012def",
 					"branch refs/heads/my-feature",
 					"",
@@ -102,7 +102,7 @@ describe("GitService", () => {
 				"/home/user/repo",
 			);
 
-			expect(result).toBe("/home/user/.cyrus/worktrees/ENG-97");
+			expect(result).toBe("/home/user/.sylas/worktrees/ENG-97");
 		});
 
 		it("returns null when git command fails", () => {
@@ -144,7 +144,7 @@ describe("GitService", () => {
 			title: "Fix the shader",
 			description: null,
 			url: "",
-			branchName: "cyrustester/eng-97-fix-shader",
+			branchName: "sylastester/eng-97-fix-shader",
 			assigneeId: null,
 			stateId: null,
 			teamId: null,
@@ -172,7 +172,7 @@ describe("GitService", () => {
 			id: "repo-1",
 			name: "test-repo",
 			repositoryPath: "/home/user/repo",
-			workspaceBaseDir: "/home/user/.cyrus/worktrees",
+			workspaceBaseDir: "/home/user/.sylas/worktrees",
 			baseBranch: "main",
 			...overrides,
 		});
@@ -195,15 +195,15 @@ describe("GitService", () => {
 					}
 					// Second call: branch-based check via findWorktreeByBranch
 					return [
-						"worktree /home/user/.cyrus/worktrees/LINEAR-SESSION",
+						"worktree /home/user/.sylas/worktrees/LINEAR-SESSION",
 						"HEAD 789abc012def",
-						"branch refs/heads/cyrustester/eng-97-fix-shader",
+						"branch refs/heads/sylastester/eng-97-fix-shader",
 						"",
 					].join("\n");
 				}
 				if (
 					cmdStr.includes(
-						'git rev-parse --verify "cyrustester/eng-97-fix-shader"',
+						'git rev-parse --verify "sylastester/eng-97-fix-shader"',
 					)
 				) {
 					// Branch exists
@@ -214,7 +214,7 @@ describe("GitService", () => {
 
 			const result = await gitService.createGitWorktree(issue, repository);
 
-			expect(result.path).toBe("/home/user/.cyrus/worktrees/LINEAR-SESSION");
+			expect(result.path).toBe("/home/user/.sylas/worktrees/LINEAR-SESSION");
 			expect(result.isGitWorktree).toBe(true);
 			expect(mockLogger.info).toHaveBeenCalledWith(
 				expect.stringContaining("already checked out in worktree"),
@@ -236,7 +236,7 @@ describe("GitService", () => {
 				}
 				if (
 					cmdStr.includes(
-						'git rev-parse --verify "cyrustester/eng-97-fix-shader"',
+						'git rev-parse --verify "sylastester/eng-97-fix-shader"',
 					)
 				) {
 					// Branch exists
@@ -247,14 +247,14 @@ describe("GitService", () => {
 				}
 				if (cmdStr.includes("git worktree add")) {
 					throw new Error(
-						"fatal: 'cyrustester/eng-97-fix-shader' is already used by worktree at '/home/user/.cyrus/worktrees/LINEAR-SESSION'",
+						"fatal: 'sylastester/eng-97-fix-shader' is already used by worktree at '/home/user/.sylas/worktrees/LINEAR-SESSION'",
 					);
 				}
 				return Buffer.from("");
 			});
 
 			mockExistsSync.mockImplementation((path: any) => {
-				if (String(path) === "/home/user/.cyrus/worktrees/LINEAR-SESSION") {
+				if (String(path) === "/home/user/.sylas/worktrees/LINEAR-SESSION") {
 					return true;
 				}
 				return false;
@@ -262,7 +262,7 @@ describe("GitService", () => {
 
 			const result = await gitService.createGitWorktree(issue, repository);
 
-			expect(result.path).toBe("/home/user/.cyrus/worktrees/LINEAR-SESSION");
+			expect(result.path).toBe("/home/user/.sylas/worktrees/LINEAR-SESSION");
 			expect(result.isGitWorktree).toBe(true);
 			expect(mockLogger.info).toHaveBeenCalledWith(
 				expect.stringContaining("Reusing existing worktree"),
@@ -283,7 +283,7 @@ describe("GitService", () => {
 				}
 				if (
 					cmdStr.includes(
-						'git rev-parse --verify "cyrustester/eng-97-fix-shader"',
+						'git rev-parse --verify "sylastester/eng-97-fix-shader"',
 					)
 				) {
 					return Buffer.from("abc123\n");
@@ -299,7 +299,7 @@ describe("GitService", () => {
 
 			const result = await gitService.createGitWorktree(issue, repository);
 
-			expect(result.path).toBe("/home/user/.cyrus/worktrees/ENG-97");
+			expect(result.path).toBe("/home/user/.sylas/worktrees/ENG-97");
 			expect(result.isGitWorktree).toBe(false);
 		});
 	});

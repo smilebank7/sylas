@@ -1,14 +1,14 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import type { ApiResponse, CyrusEnvPayload } from "../types.js";
+import type { ApiResponse, SylasEnvPayload } from "../types.js";
 
 /**
- * Handle Cyrus environment variables update
+ * Handle Sylas environment variables update
  * Primarily used to update/provide the Claude API token
  */
-export async function handleCyrusEnv(
-	payload: CyrusEnvPayload,
-	cyrusHome: string,
+export async function handleSylasEnv(
+	payload: SylasEnvPayload,
+	sylasHome: string,
 ): Promise<ApiResponse> {
 	try {
 		// Validate payload
@@ -29,7 +29,7 @@ export async function handleCyrusEnv(
 			([key, value]) =>
 				value !== undefined &&
 				typeof value === "string" &&
-				!["variables", "restartCyrus", "backupEnv"].includes(key),
+				!["variables", "restartSylas", "backupEnv"].includes(key),
 		) as [string, string][];
 
 		if (envVars.length === 0) {
@@ -41,9 +41,9 @@ export async function handleCyrusEnv(
 			};
 		}
 
-		const envPath = join(cyrusHome, ".env");
+		const envPath = join(sylasHome, ".env");
 
-		// Ensure the .cyrus directory exists
+		// Ensure the .sylas directory exists
 		const envDir = dirname(envPath);
 		if (!existsSync(envDir)) {
 			mkdirSync(envDir, { recursive: true });
@@ -91,7 +91,7 @@ export async function handleCyrusEnv(
 		if (payload.backupEnv && existsSync(envPath)) {
 			try {
 				const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-				const backupPath = join(cyrusHome, `.env.backup-${timestamp}`);
+				const backupPath = join(sylasHome, `.env.backup-${timestamp}`);
 				const existingEnvFile = readFileSync(envPath, "utf-8");
 				writeFileSync(backupPath, existingEnvFile, "utf-8");
 			} catch (backupError) {
@@ -112,7 +112,7 @@ export async function handleCyrusEnv(
 				data: {
 					envPath,
 					variablesUpdated: envVars.map(([key]) => key),
-					restartCyrus: payload.restartCyrus || false,
+					restartSylas: payload.restartSylas || false,
 				},
 			};
 		} catch (error) {

@@ -40,10 +40,10 @@ RUN pnpm link --global
 COPY deploy/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
-# Create cyrus home
-RUN mkdir -p /root/.cyrus
+# Create sylas home
+RUN mkdir -p /root/.sylas
 
 WORKDIR /app
 EXPOSE 3456
 ENTRYPOINT ["/entrypoint.sh"]
-CMD ["cyrus", "start"]
+CMD ["sylas", "start"]

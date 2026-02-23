@@ -1,7 +1,7 @@
 {
-	"name": "cyrus-codex-runner",
+	"name": "sylas-codex-runner",
 	"version": "0.2.19",
-	"description": "Codex CLI process wrapper for Cyrus",
+	"description": "Codex CLI process wrapper for Sylas",
 	"type": "module",
 	"main": "dist/index.js",
 	"types": "dist/index.d.ts",
@@ -17,7 +17,7 @@
 	},
 	"dependencies": {
 		"@openai/codex-sdk": "^0.98.0",
-		"cyrus-core": "workspace:*"
+		"sylas-core": "workspace:*"
 	},
 	"devDependencies": {
 		"@types/node": "^20.0.0",

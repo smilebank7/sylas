@@ -1,26 +1,26 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import type { EdgeConfig } from "cyrus-core";
+import type { EdgeConfig } from "sylas-core";
 import {
 	type ApiResponse,
-	type CyrusConfigPayload,
-	CyrusConfigPayloadSchema,
+	type SylasConfigPayload,
+	SylasConfigPayloadSchema,
 } from "../types.js";
 
 /**
- * Handle Cyrus configuration update
- * Updates the ~/.cyrus/config.json file with the provided configuration
+ * Handle Sylas configuration update
+ * Updates the ~/.sylas/config.json file with the provided configuration
  *
  * @param rawPayload - Unvalidated payload from the request
- * @param cyrusHome - Path to the Cyrus home directory
+ * @param sylasHome - Path to the Sylas home directory
  */
-export async function handleCyrusConfig(
+export async function handleSylasConfig(
 	rawPayload: unknown,
-	cyrusHome: string,
+	sylasHome: string,
 ): Promise<ApiResponse> {
 	try {
 		// Validate payload with Zod schema
-		const parseResult = CyrusConfigPayloadSchema.safeParse(rawPayload);
+		const parseResult = SylasConfigPayloadSchema.safeParse(rawPayload);
 
 		if (!parseResult.success) {
 			const issues = parseResult.error.issues;
@@ -35,26 +35,26 @@ export async function handleCyrusConfig(
 			};
 		}
 
-		const payload: CyrusConfigPayload = parseResult.data;
-		const configPath = join(cyrusHome, "config.json");
+		const payload: SylasConfigPayload = parseResult.data;
+		const configPath = join(sylasHome, "config.json");
 
-		// Ensure the .cyrus directory exists
+		// Ensure the .sylas directory exists
 		const configDir = dirname(configPath);
 		if (!existsSync(configDir)) {
 			mkdirSync(configDir, { recursive: true });
 		}
 
 		// Extract operation flags (not part of EdgeConfig)
-		const { restartCyrus, backupConfig, ...edgeConfig } = payload;
+		const { restartSylas, backupConfig, ...edgeConfig } = payload;
 
 		// Process repositories to apply defaults
 		const repositories = edgeConfig.repositories.map(
-			(repo: CyrusConfigPayload["repositories"][number]) => {
+			(repo: SylasConfigPayload["repositories"][number]) => {
 				return {
 					...repo,
-					// Set workspaceBaseDir (use provided or default to ~/.cyrus/workspaces)
+					// Set workspaceBaseDir (use provided or default to ~/.sylas/workspaces)
 					workspaceBaseDir:
-						repo.workspaceBaseDir || join(cyrusHome, "workspaces"),
+						repo.workspaceBaseDir || join(sylasHome, "workspaces"),
 					// Set isActive (defaults to true)
 					isActive: repo.isActive !== false,
 					// Ensure teamKeys is always an array
@@ -88,7 +88,7 @@ export async function handleCyrusConfig(
 		if (backupConfig && existsSync(configPath)) {
 			try {
 				const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-				const backupPath = join(cyrusHome, `config.backup-${timestamp}.json`);
+				const backupPath = join(sylasHome, `config.backup-${timestamp}.json`);
 				const existingConfig = readFileSync(configPath, "utf-8");
 				writeFileSync(backupPath, existingConfig, "utf-8");
 			} catch (backupError) {
@@ -105,11 +105,11 @@ export async function handleCyrusConfig(
 
 			return {
 				success: true,
-				message: "Cyrus configuration updated successfully",
+				message: "Sylas configuration updated successfully",
 				data: {
 					configPath,
 					repositoriesCount: repositories.length,
-					restartCyrus: restartCyrus || false,
+					restartSylas: restartSylas || false,
 				},
 			};
 		} catch (error) {
@@ -129,10 +129,10 @@ export async function handleCyrusConfig(
 }
 
 /**
- * Read current Cyrus configuration
+ * Read current Sylas configuration
  */
-export function readCyrusConfig(cyrusHome: string): any {
-	const configPath = join(cyrusHome, "config.json");
+export function readSylasConfig(sylasHome: string): any {
+	const configPath = join(sylasHome, "config.json");
 
 	if (!existsSync(configPath)) {
 		return { repositories: [] };

@@ -16,7 +16,7 @@
  * @packageDocumentation
  */
 
-import type { IMessageFormatter } from "cyrus-core";
+import type { IMessageFormatter } from "sylas-core";
 
 type ToolInput = Record<string, unknown>;
 

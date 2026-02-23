@@ -1,18 +1,18 @@
 ---
 name: release
-description: Run a Cyrus release by publishing all packages to npm in the correct dependency order, updating changelogs, and creating git tags.
+description: Run a Sylas release by publishing all packages to npm in the correct dependency order, updating changelogs, and creating git tags.
 ---
 
 # Release
 
-Publish Cyrus packages to npm and create a release.
+Publish Sylas packages to npm and create a release.
 
 ## Pre-Publishing Checklist
 
 1. **Update CHANGELOG.md and CHANGELOG.internal.md**:
    - Move items from `## [Unreleased]` to a new versioned section in both files
    - Use the CLI version number (e.g., `## [0.1.22] - 2025-01-06`)
-   - CHANGELOG.md: Focus on end-user impact from the perspective of the `cyrus` CLI
+   - CHANGELOG.md: Focus on end-user impact from the perspective of the `sylas` CLI
    - CHANGELOG.internal.md: Internal development changes, refactors, and tooling updates
 
 2. **Check Linear Issues**:
@@ -127,7 +127,7 @@ gh pr create --title "Release v0.1.XX" --body "$(cat <<'EOF'
 - Package versions bumped to 0.1.XX
 
 ## Links
-- [GitHub Release](https://github.com/ceedaragents/cyrus/releases/tag/v0.1.XX)
+- [GitHub Release](https://github.com/smilebank7/sylas/releases/tag/v0.1.XX)
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 EOF

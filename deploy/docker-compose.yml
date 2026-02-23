@@ -3,31 +3,31 @@ networks:
     external: true
 
 services:
-  cyrus:
-    image: ghcr.io/smilebank7/cyrus:latest
-    container_name: cyrus
+  sylas:
+    image: ghcr.io/smilebank7/sylas:latest
+    container_name: sylas
     restart: unless-stopped
-    command: ["cyrus", "start"]
+    command: ["sylas", "start"]
     env_file:
       - .env
     volumes:
-      - cyrus-data:/root/.cyrus
-      - cyrus-repos:/root/.cyrus/repos
+      - sylas-data:/root/.sylas
+      - sylas-repos:/root/.sylas/repos
       - opencode-data:/root/.local/share/opencode
     networks:
       - traefik-public
     labels:
       - traefik.enable=true
-      - "traefik.http.routers.cyrus.rule=Host(`${CYRUS_DOMAIN:-cyrus.example.com}`)"
-      - traefik.http.routers.cyrus.entrypoints=websecure
-      - traefik.http.routers.cyrus.tls.certresolver=myresolver
-      - traefik.http.services.cyrus.loadbalancer.server.port=3456
-      - "traefik.http.routers.cyrus-http.rule=Host(`${CYRUS_DOMAIN:-cyrus.example.com}`)"
-      - traefik.http.routers.cyrus-http.entrypoints=web
-      - traefik.http.middlewares.cyrus-redirect.redirectscheme.scheme=https
-      - traefik.http.routers.cyrus-http.middlewares=cyrus-redirect
+      - "traefik.http.routers.sylas.rule=Host(`${SYLAS_DOMAIN:-sylas.example.com}`)"
+      - traefik.http.routers.sylas.entrypoints=websecure
+      - traefik.http.routers.sylas.tls.certresolver=myresolver
+      - traefik.http.services.sylas.loadbalancer.server.port=3456
+      - "traefik.http.routers.sylas-http.rule=Host(`${SYLAS_DOMAIN:-sylas.example.com}`)"
+      - traefik.http.routers.sylas-http.entrypoints=web
+      - traefik.http.middlewares.sylas-redirect.redirectscheme.scheme=https
+      - traefik.http.routers.sylas-http.middlewares=sylas-redirect
 
 volumes:
-  cyrus-data:
-  cyrus-repos:
+  sylas-data:
+  sylas-repos:
   opencode-data:

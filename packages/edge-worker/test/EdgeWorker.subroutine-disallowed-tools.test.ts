@@ -6,7 +6,7 @@
  * to prevent the agent from appearing to "hang" in Linear.
  */
 
-import type { CyrusAgentSession } from "cyrus-core";
+import type { SylasAgentSession } from "sylas-core";
 import { beforeEach, describe, expect, it } from "vitest";
 import { ProcedureAnalyzer } from "../src/procedures/ProcedureAnalyzer";
 import { PROCEDURES, SUBROUTINES } from "../src/procedures/registry";
@@ -16,7 +16,7 @@ describe("EdgeWorker - Subroutine Tool Disabling", () => {
 
 	beforeEach(() => {
 		procedureAnalyzer = new ProcedureAnalyzer({
-			cyrusHome: "/test/.cyrus",
+			sylasHome: "/test/.sylas",
 		});
 	});
 
@@ -81,7 +81,7 @@ describe("EdgeWorker - Subroutine Tool Disabling", () => {
 	describe("Procedure Integration", () => {
 		it("should expose disallowAllTools when at concise-summary subroutine in full-development procedure", () => {
 			const procedure = PROCEDURES["full-development"];
-			const session: CyrusAgentSession = {
+			const session: SylasAgentSession = {
 				id: "session-123",
 				externalSessionId: "session-123",
 				issueContext: {
@@ -123,7 +123,7 @@ describe("EdgeWorker - Subroutine Tool Disabling", () => {
 
 		it("should expose disallowAllTools when at verbose-summary subroutine", () => {
 			// Create a custom procedure with verbose-summary for testing
-			const session: CyrusAgentSession = {
+			const session: SylasAgentSession = {
 				id: "session-456",
 				externalSessionId: "session-456",
 				issueContext: {
@@ -168,7 +168,7 @@ describe("EdgeWorker - Subroutine Tool Disabling", () => {
 
 		it("should expose disallowAllTools for question-answer in simple-question procedure", () => {
 			const procedure = PROCEDURES["simple-question"];
-			const session: CyrusAgentSession = {
+			const session: SylasAgentSession = {
 				id: "session-789",
 				externalSessionId: "session-789",
 				issueContext: {
@@ -205,7 +205,7 @@ describe("EdgeWorker - Subroutine Tool Disabling", () => {
 
 		it("should expose disallowAllTools for plan-summary in plan-mode procedure", () => {
 			const procedure = PROCEDURES["plan-mode"];
-			const session: CyrusAgentSession = {
+			const session: SylasAgentSession = {
 				id: "session-101",
 				externalSessionId: "session-101",
 				issueContext: {
@@ -242,7 +242,7 @@ describe("EdgeWorker - Subroutine Tool Disabling", () => {
 
 		it("should NOT expose disallowAllTools for non-summary subroutines", () => {
 			const procedure = PROCEDURES["full-development"];
-			const session: CyrusAgentSession = {
+			const session: SylasAgentSession = {
 				id: "session-202",
 				externalSessionId: "session-202",
 				issueContext: {

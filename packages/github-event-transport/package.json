@@ -1,5 +1,5 @@
 {
-	"name": "cyrus-github-event-transport",
+	"name": "sylas-github-event-transport",
 	"version": "0.2.19",
 	"description": "GitHub event transport for receiving and verifying forwarded GitHub webhooks",
 	"type": "module",
@@ -16,7 +16,7 @@
 		"test:run": "vitest run"
 	},
 	"dependencies": {
-		"cyrus-core": "workspace:*",
+		"sylas-core": "workspace:*",
 		"fastify": "^5.2.0"
 	},
 	"devDependencies": {

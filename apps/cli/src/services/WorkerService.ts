@@ -1,7 +1,7 @@
-import { getCyrusAppUrl } from "cyrus-cloudflare-tunnel-client";
-import type { EdgeWorkerConfig, Issue, RepositoryConfig } from "cyrus-core";
-import type { GitService } from "cyrus-edge-worker";
-import { EdgeWorker } from "cyrus-edge-worker";
+import { getSylasAppUrl } from "sylas-cloudflare-tunnel-client";
+import type { EdgeWorkerConfig, Issue, RepositoryConfig } from "sylas-core";
+import type { GitService } from "sylas-edge-worker";
+import { EdgeWorker } from "sylas-edge-worker";
 import { DEFAULT_SERVER_PORT, parsePort } from "../config/constants.js";
 import type { Workspace } from "../config/types.js";
 import type { ConfigService } from "./ConfigService.js";
@@ -18,7 +18,7 @@ export class WorkerService {
 	constructor(
 		private configService: ConfigService,
 		private gitService: GitService,
-		private cyrusHome: string,
+		private sylasHome: string,
 		private logger: Logger,
 		private version?: string,
 	) {}
@@ -42,14 +42,14 @@ export class WorkerService {
 	 * Used after initial authentication while waiting for server configuration
 	 */
 	async startSetupWaitingMode(): Promise<void> {
-		const { SharedApplicationServer } = await import("cyrus-edge-worker");
-		const { ConfigUpdater } = await import("cyrus-config-updater");
+		const { SharedApplicationServer } = await import("sylas-edge-worker");
+		const { ConfigUpdater } = await import("sylas-config-updater");
 
 		// Determine server configuration
 		const isExternalHost =
-			process.env.CYRUS_HOST_EXTERNAL?.toLowerCase().trim() === "true";
+			process.env.SYLAS_HOST_EXTERNAL?.toLowerCase().trim() === "true";
 		const serverPort = parsePort(
-			process.env.CYRUS_SERVER_PORT,
+			process.env.SYLAS_SERVER_PORT,
 			DEFAULT_SERVER_PORT,
 		);
 		const serverHost = isExternalHost ? "0.0.0.0" : "localhost";
@@ -64,14 +64,14 @@ export class WorkerService {
 		// Register ConfigUpdater routes
 		const configUpdater = new ConfigUpdater(
 			this.setupWaitingServer.getFastifyInstance(),
-			this.cyrusHome,
-			process.env.CYRUS_API_KEY || "",
+			this.sylasHome,
+			process.env.SYLAS_API_KEY || "",
 		);
 		configUpdater.register();
 
 		this.logger.info("✅ Config updater registered");
 		this.logger.info(
-			"   Routes: /api/update/cyrus-config, /api/update/cyrus-env,",
+			"   Routes: /api/update/sylas-config, /api/update/sylas-env,",
 		);
 		this.logger.info(
 			"           /api/update/repository, /api/test-mcp, /api/configure-mcp",
@@ -91,8 +91,8 @@ export class WorkerService {
 
 		this.logger.info("📡 Config updater: Ready");
 		this.logger.raw("");
-		this.logger.info("Your Cyrus instance is ready to receive configuration.");
-		this.logger.info(`Complete setup at: ${getCyrusAppUrl()}/onboarding`);
+		this.logger.info("Your Sylas instance is ready to receive configuration.");
+		this.logger.info(`Complete setup at: ${getSylasAppUrl()}/onboarding`);
 		this.logger.divider(70);
 	}
 
@@ -101,14 +101,14 @@ export class WorkerService {
 	 * Used after onboarding when no repositories are configured
 	 */
 	async startIdleMode(): Promise<void> {
-		const { SharedApplicationServer } = await import("cyrus-edge-worker");
-		const { ConfigUpdater } = await import("cyrus-config-updater");
+		const { SharedApplicationServer } = await import("sylas-edge-worker");
+		const { ConfigUpdater } = await import("sylas-config-updater");
 
 		// Determine server configuration
 		const isExternalHost =
-			process.env.CYRUS_HOST_EXTERNAL?.toLowerCase().trim() === "true";
+			process.env.SYLAS_HOST_EXTERNAL?.toLowerCase().trim() === "true";
 		const serverPort = parsePort(
-			process.env.CYRUS_SERVER_PORT,
+			process.env.SYLAS_SERVER_PORT,
 			DEFAULT_SERVER_PORT,
 		);
 		const serverHost = isExternalHost ? "0.0.0.0" : "localhost";
@@ -123,14 +123,14 @@ export class WorkerService {
 		// Register ConfigUpdater routes
 		const configUpdater = new ConfigUpdater(
 			this.setupWaitingServer.getFastifyInstance(),
-			this.cyrusHome,
-			process.env.CYRUS_API_KEY || "",
+			this.sylasHome,
+			process.env.SYLAS_API_KEY || "",
 		);
 		configUpdater.register();
 
 		this.logger.info("✅ Config updater registered");
 		this.logger.info(
-			"   Routes: /api/update/cyrus-config, /api/update/cyrus-env,",
+			"   Routes: /api/update/sylas-config, /api/update/sylas-env,",
 		);
 		this.logger.info(
 			"           /api/update/repository, /api/test-mcp, /api/configure-mcp",
@@ -150,7 +150,7 @@ export class WorkerService {
 
 		this.logger.info("📡 Config updater: Ready");
 		this.logger.raw("");
-		const appUrl = getCyrusAppUrl();
+		const appUrl = getSylasAppUrl();
 		this.logger.info(`Waiting for repository configuration from ${appUrl}`);
 		this.logger.info(`Add repositories at: ${appUrl}/repos`);
 		this.logger.divider(70);
@@ -185,7 +185,7 @@ export class WorkerService {
 
 		// Determine if using external host
 		const isExternalHost =
-			process.env.CYRUS_HOST_EXTERNAL?.toLowerCase().trim() === "true";
+			process.env.SYLAS_HOST_EXTERNAL?.toLowerCase().trim() === "true";
 
 		// Load config once for model defaults
 		const edgeConfig = this.configService.load();
@@ -194,7 +194,7 @@ export class WorkerService {
 		const config: EdgeWorkerConfig = {
 			version: this.version,
 			repositories,
-			cyrusHome: this.cyrusHome,
+			sylasHome: this.sylasHome,
 			defaultAllowedTools:
 				process.env.ALLOWED_TOOLS?.split(",").map((t) => t.trim()) || [],
 			defaultDisallowedTools:
@@ -203,21 +203,21 @@ export class WorkerService {
 			// Model configuration: environment variables take precedence over config file.
 			// Legacy env vars/keys are still accepted for backwards compatibility.
 			claudeDefaultModel:
-				process.env.CYRUS_CLAUDE_DEFAULT_MODEL ||
-				process.env.CYRUS_DEFAULT_MODEL ||
+				process.env.SYLAS_CLAUDE_DEFAULT_MODEL ||
+				process.env.SYLAS_DEFAULT_MODEL ||
 				edgeConfig.claudeDefaultModel ||
 				edgeConfig.defaultModel,
 			claudeDefaultFallbackModel:
-				process.env.CYRUS_CLAUDE_DEFAULT_FALLBACK_MODEL ||
-				process.env.CYRUS_DEFAULT_FALLBACK_MODEL ||
+				process.env.SYLAS_CLAUDE_DEFAULT_FALLBACK_MODEL ||
+				process.env.SYLAS_DEFAULT_FALLBACK_MODEL ||
 				edgeConfig.claudeDefaultFallbackModel ||
 				edgeConfig.defaultFallbackModel,
 			geminiDefaultModel:
-				process.env.CYRUS_GEMINI_DEFAULT_MODEL || edgeConfig.geminiDefaultModel,
+				process.env.SYLAS_GEMINI_DEFAULT_MODEL || edgeConfig.geminiDefaultModel,
 			codexDefaultModel:
-				process.env.CYRUS_CODEX_DEFAULT_MODEL || edgeConfig.codexDefaultModel,
-			webhookBaseUrl: process.env.CYRUS_BASE_URL,
-			serverPort: parsePort(process.env.CYRUS_SERVER_PORT, DEFAULT_SERVER_PORT),
+				process.env.SYLAS_CODEX_DEFAULT_MODEL || edgeConfig.codexDefaultModel,
+			webhookBaseUrl: process.env.SYLAS_BASE_URL,
+			serverPort: parsePort(process.env.SYLAS_SERVER_PORT, DEFAULT_SERVER_PORT),
 			serverHost: isExternalHost ? "0.0.0.0" : "localhost",
 			ngrokAuthToken,
 			// User access control configuration

@@ -1,7 +1,7 @@
 /**
  * OpenCode Runner Types
  *
- * Type definitions for the OpenCode SDK integration with Cyrus.
+ * Type definitions for the OpenCode SDK integration with Sylas.
  * OpenCode is an SDK-based AI coding agent that provides:
  * - Managed server lifecycle via createOpencode()
  * - SSE event streaming
@@ -10,7 +10,7 @@
  * @packageDocumentation
  */
 
-import type { AgentRunnerConfig, AgentSessionInfo } from "cyrus-core";
+import type { AgentRunnerConfig, AgentSessionInfo } from "sylas-core";
 
 // ============================================================================
 // Configuration Types
@@ -94,7 +94,7 @@ export interface OpenCodeRunnerConfig extends AgentRunnerConfig {
 export interface OpenCodeSessionInfo extends AgentSessionInfo {
 	/**
 	 * The session ID assigned by OpenCode.
-	 * This is different from the Cyrus session ID.
+	 * This is different from the Sylas session ID.
 	 */
 	openCodeSessionId: string | null;
 

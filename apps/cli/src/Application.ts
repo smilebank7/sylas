@@ -1,12 +1,12 @@
 import { existsSync, mkdirSync, watch } from "node:fs";
 import { dirname, join } from "node:path";
+import dotenv from "dotenv";
 import {
 	DEFAULT_PROXY_URL,
 	DEFAULT_WORKTREES_DIR,
 	type RepositoryConfig,
-} from "cyrus-core";
-import { GitService, SharedApplicationServer } from "cyrus-edge-worker";
-import dotenv from "dotenv";
+} from "sylas-core";
+import { GitService, SharedApplicationServer } from "sylas-edge-worker";
 import { DEFAULT_SERVER_PORT, parsePort } from "./config/constants.js";
 import { ConfigService } from "./services/ConfigService.js";
 import { Logger } from "./services/Logger.js";
@@ -28,7 +28,7 @@ export class Application {
 	private readonly envFilePath: string;
 
 	constructor(
-		public readonly cyrusHome: string,
+		public readonly sylasHome: string,
 		customEnvPath?: string,
 		version?: string,
 	) {
@@ -38,8 +38,8 @@ export class Application {
 		// Store version
 		this.version = version || "unknown";
 
-		// Determine the env file path: use custom path if provided, otherwise default to ~/.cyrus/.env
-		this.envFilePath = customEnvPath || join(cyrusHome, ".env");
+		// Determine the env file path: use custom path if provided, otherwise default to ~/.sylas/.env
+		this.envFilePath = customEnvPath || join(sylasHome, ".env");
 
 		// Ensure required directories exist
 		this.ensureRequiredDirectories();
@@ -51,12 +51,12 @@ export class Application {
 		this.setupEnvFileWatcher();
 
 		// Initialize services
-		this.config = new ConfigService(cyrusHome, this.logger);
+		this.config = new ConfigService(sylasHome, this.logger);
 		this.git = new GitService(this.logger);
 		this.worker = new WorkerService(
 			this.config,
 			this.git,
-			cyrusHome,
+			sylasHome,
 			this.logger,
 			this.version,
 		);
@@ -100,14 +100,14 @@ export class Application {
 	}
 
 	/**
-	 * Ensure required Cyrus directories exist
-	 * Creates: ~/.cyrus/repos, ~/.cyrus/worktrees, ~/.cyrus/mcp-configs
+	 * Ensure required Sylas directories exist
+	 * Creates: ~/.sylas/repos, ~/.sylas/worktrees, ~/.sylas/mcp-configs
 	 */
 	private ensureRequiredDirectories(): void {
 		const requiredDirs = ["repos", DEFAULT_WORKTREES_DIR, "mcp-configs"];
 
 		for (const dir of requiredDirs) {
-			const dirPath = join(this.cyrusHome, dir);
+			const dirPath = join(this.sylasHome, dir);
 			if (!existsSync(dirPath)) {
 				try {
 					mkdirSync(dirPath, { recursive: true });
@@ -141,7 +141,7 @@ export class Application {
 	 */
 	async createTempServer(): Promise<SharedApplicationServer> {
 		const serverPort = parsePort(
-			process.env.CYRUS_SERVER_PORT,
+			process.env.SYLAS_SERVER_PORT,
 			DEFAULT_SERVER_PORT,
 		);
 		return new SharedApplicationServer(serverPort);
@@ -205,7 +205,7 @@ export class Application {
 							`📦 Starting edge worker with ${repositories.length} repository(ies)...`,
 						);
 
-						// Remove CYRUS_SETUP_PENDING flag from .env (only in setup waiting mode)
+						// Remove SYLAS_SETUP_PENDING flag from .env (only in setup waiting mode)
 						if (this.isInSetupWaitingMode) {
 							await this.removeSetupPendingFlag();
 						}
@@ -225,11 +225,11 @@ export class Application {
 	}
 
 	/**
-	 * Remove CYRUS_SETUP_PENDING flag from .env file
+	 * Remove SYLAS_SETUP_PENDING flag from .env file
 	 */
 	private async removeSetupPendingFlag(): Promise<void> {
 		const { readFile, writeFile } = await import("node:fs/promises");
-		const envPath = join(this.cyrusHome, ".env");
+		const envPath = join(this.sylasHome, ".env");
 
 		if (!existsSync(envPath)) {
 			return;
@@ -239,17 +239,17 @@ export class Application {
 			const envContent = await readFile(envPath, "utf-8");
 			const updatedContent = envContent
 				.split("\n")
-				.filter((line) => !line.startsWith("CYRUS_SETUP_PENDING="))
+				.filter((line) => !line.startsWith("SYLAS_SETUP_PENDING="))
 				.join("\n");
 
 			await writeFile(envPath, updatedContent, "utf-8");
-			this.logger.info("✅ Removed CYRUS_SETUP_PENDING flag from .env");
+			this.logger.info("✅ Removed SYLAS_SETUP_PENDING flag from .env");
 
 			// Reload environment variables
 			this.loadEnvFile();
 		} catch (error) {
 			this.logger.error(
-				`❌ Failed to remove CYRUS_SETUP_PENDING flag: ${error}`,
+				`❌ Failed to remove SYLAS_SETUP_PENDING flag: ${error}`,
 			);
 		}
 	}

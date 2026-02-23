@@ -6,12 +6,12 @@
  */
 
 import type {
-	CyrusAgentSession,
 	GuidanceRule,
 	Issue,
 	RepositoryConfig,
+	SylasAgentSession,
 	WebhookAgentSession,
-} from "cyrus-core";
+} from "sylas-core";
 
 /**
  * Output structure from buildPrompt - contains everything needed to start a Claude session
@@ -67,8 +67,8 @@ export type PromptType =
  */
 export interface PromptAssemblyInput {
 	// ===== Session Context =====
-	/** The Cyrus agent session */
-	session: CyrusAgentSession;
+	/** The Sylas agent session */
+	session: SylasAgentSession;
 
 	/** Full issue details */
 	fullIssue: Issue;

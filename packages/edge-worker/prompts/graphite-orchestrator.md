@@ -34,11 +34,11 @@ Each PR in the stack:
 - `mcp__linear__get_issue` - Retrieve issue details
 - `mcp__linear__update_issue` - Update issue properties
 
-### Cyrus MCP Tools
-- `mcp__cyrus-tools__linear_agent_session_create` - Create agent sessions for issue tracking
-- `mcp__cyrus-tools__linear_agent_session_create_on_comment` - Create agent sessions on root comments (not replies) to trigger sub-agents for child issues
-- `mcp__cyrus-tools__linear_agent_give_feedback` - Provide feedback to child agent sessions
-- `mcp__cyrus-tools__linear_set_issue_relation` - **CRITICAL FOR STACKING**: Set "Blocked By" relationships between issues to define stack order
+### Sylas MCP Tools
+- `mcp__sylas-tools__linear_agent_session_create` - Create agent sessions for issue tracking
+- `mcp__sylas-tools__linear_agent_session_create_on_comment` - Create agent sessions on root comments (not replies) to trigger sub-agents for child issues
+- `mcp__sylas-tools__linear_agent_give_feedback` - Provide feedback to child agent sessions
+- `mcp__sylas-tools__linear_set_issue_relation` - **CRITICAL FOR STACKING**: Set "Blocked By" relationships between issues to define stack order
 
 ## Execution Workflow
 
@@ -69,12 +69,12 @@ Create sub-issues with:
 
 **CRITICAL: Setting up Blocked By Relationships**
 
-When you create sub-issues, you MUST establish the dependency chain using the `mcp__cyrus-tools__linear_set_issue_relation` tool:
+When you create sub-issues, you MUST establish the dependency chain using the `mcp__sylas-tools__linear_set_issue_relation` tool:
 
 1. First sub-issue: No blocked-by relationship needed
 2. Second sub-issue onwards: **Immediately after creating the sub-issue**, call:
    ```
-   mcp__cyrus-tools__linear_set_issue_relation({
+   mcp__sylas-tools__linear_set_issue_relation({
      issueId: "<previous-sub-issue-id>",  // The BLOCKER - must complete first
      relatedIssueId: "<new-sub-issue-id>", // The BLOCKED issue - depends on the blocker
      type: "blocks"                        // previous-sub-issue BLOCKS new-sub-issue
@@ -130,7 +130,7 @@ For each sub-issue in order:
 
 ```
 1. Trigger sub-agent session:
-   - Use mcp__cyrus-tools__linear_agent_session_create with issueId
+   - Use mcp__sylas-tools__linear_agent_session_create with issueId
    - The sub-agent will work on a branch that stacks on the previous
 
 2. HALT and await completion notification
@@ -184,7 +184,7 @@ Before proceeding to the next sub-issue, you MUST verify:
 - **DO NOT MERGE** - proceed to next sub-issue
 
 **Criteria Partially Met / Not Met:**
-- Provide specific feedback using `mcp__cyrus-tools__linear_agent_give_feedback`
+- Provide specific feedback using `mcp__sylas-tools__linear_agent_give_feedback`
 - Wait for fixes before proceeding
 - Do not proceed to next sub-issue until current one passes
 
@@ -267,7 +267,7 @@ When creating a sub-issue, verify:
 - [ ] `assigneeId` set to parent's `{{assignee_id}}`
 - [ ] **NO delegate assigned**
 - [ ] Stack position documented in description
-- [ ] For sub-issues after first: Called `mcp__cyrus-tools__linear_set_issue_relation` with `type: "blocks"` to set "Blocked By" relationship
+- [ ] For sub-issues after first: Called `mcp__sylas-tools__linear_set_issue_relation` with `type: "blocks"` to set "Blocked By" relationship
 - [ ] Clear objective defined
 - [ ] Acceptance criteria specified
 - [ ] Mandatory verification requirements template included

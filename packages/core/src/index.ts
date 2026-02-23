@@ -30,14 +30,6 @@ export type {
 	SDKResultMessage,
 	SDKUserMessage,
 } from "./agent-runner-types.js";
-export type {
-	CyrusAgentSession,
-	CyrusAgentSessionEntry,
-	IssueContext,
-	IssueMinimal,
-	Workspace,
-} from "./CyrusAgentSession.js";
-
 // Configuration types
 export type {
 	EdgeConfig,
@@ -59,7 +51,6 @@ export {
 	UserAccessControlConfigSchema,
 	UserIdentifierSchema,
 } from "./config-types.js";
-
 // Constants
 export {
 	DEFAULT_BASE_BRANCH,
@@ -178,18 +169,25 @@ export {
 	isUnassignMessage,
 	isUserPromptMessage,
 } from "./messages/index.js";
-// Linear adapters have been moved to cyrus-linear-event-transport package
-// Import them directly from that package instead of from cyrus-core
+// Linear adapters have been moved to sylas-linear-event-transport package
+// Import them directly from that package instead of from sylas-core
 export type {
 	SerializableEdgeWorkerState,
-	SerializedCyrusAgentSession,
-	SerializedCyrusAgentSessionEntry,
+	SerializedSylasAgentSession,
+	SerializedSylasAgentSessionEntry,
 } from "./PersistenceManager.js";
 export {
 	PERSISTENCE_VERSION,
 	PersistenceManager,
 } from "./PersistenceManager.js";
 export { StreamingPrompt } from "./StreamingPrompt.js";
+export type {
+	IssueContext,
+	IssueMinimal,
+	SylasAgentSession,
+	SylasAgentSessionEntry,
+	Workspace,
+} from "./SylasAgentSession.js";
 
 // Simple Agent Runner types
 export type {

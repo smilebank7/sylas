@@ -31,14 +31,14 @@ describe("CursorRunner MCP enable preflight", () => {
 		for (const dir of tempDirs.splice(0)) {
 			rmSync(dir, { recursive: true, force: true });
 		}
-		delete process.env.CYRUS_CURSOR_MOCK;
+		delete process.env.SYLAS_CURSOR_MOCK;
 		delete process.env.CURSOR_MCP_COMMAND;
 		spawnSyncMock.mockReset();
 	});
 
 	it("enables servers from both mcp list output and inline mcpConfig", async () => {
 		const workspace = createTempDir();
-		process.env.CYRUS_CURSOR_MOCK = "1";
+		process.env.SYLAS_CURSOR_MOCK = "1";
 
 		spawnSyncMock.mockImplementation((_command: string, args: string[]) => {
 			if (args[1] === "list") {
@@ -58,7 +58,7 @@ describe("CursorRunner MCP enable preflight", () => {
 		});
 
 		const runner = new CursorRunner({
-			cyrusHome: "/tmp/cyrus",
+			sylasHome: "/tmp/sylas",
 			workingDirectory: workspace,
 			mcpConfig: {
 				linear: { command: "npx", args: ["-y", "@linear/mcp-server"] },
@@ -84,7 +84,7 @@ describe("CursorRunner MCP enable preflight", () => {
 
 	it("does not attempt enable calls when agent command is unavailable", async () => {
 		const workspace = createTempDir();
-		process.env.CYRUS_CURSOR_MOCK = "1";
+		process.env.SYLAS_CURSOR_MOCK = "1";
 
 		spawnSyncMock.mockReturnValue({
 			status: null,
@@ -96,7 +96,7 @@ describe("CursorRunner MCP enable preflight", () => {
 		});
 
 		const runner = new CursorRunner({
-			cyrusHome: "/tmp/cyrus",
+			sylasHome: "/tmp/sylas",
 			workingDirectory: workspace,
 			mcpConfig: {
 				trigger: { command: "npx", args: ["-y", "@trigger/mcp"] },

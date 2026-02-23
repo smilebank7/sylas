@@ -1,13 +1,13 @@
 import { readFile } from "node:fs/promises";
 import { LinearClient } from "@linear/sdk";
-import { ClaudeRunner, type HookCallbackMatcher } from "cyrus-claude-runner";
-import type { LinearAgentSessionCreatedWebhook } from "cyrus-core";
+import { ClaudeRunner, type HookCallbackMatcher } from "sylas-claude-runner";
+import type { LinearAgentSessionCreatedWebhook } from "sylas-core";
 import {
 	isAgentSessionCreatedWebhook,
 	isAgentSessionPromptedWebhook,
-} from "cyrus-core";
-import { GeminiRunner } from "cyrus-gemini-runner";
-import { LinearEventTransport } from "cyrus-linear-event-transport";
+} from "sylas-core";
+import { GeminiRunner } from "sylas-gemini-runner";
+import { LinearEventTransport } from "sylas-linear-event-transport";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AgentSessionManager } from "../src/AgentSessionManager.js";
 import { EdgeWorker } from "../src/EdgeWorker.js";
@@ -23,14 +23,14 @@ vi.mock("fs/promises", () => ({
 }));
 
 // Mock dependencies
-vi.mock("cyrus-claude-runner");
-vi.mock("cyrus-codex-runner");
-vi.mock("cyrus-gemini-runner");
-vi.mock("cyrus-linear-event-transport");
+vi.mock("sylas-claude-runner");
+vi.mock("sylas-codex-runner");
+vi.mock("sylas-gemini-runner");
+vi.mock("sylas-linear-event-transport");
 vi.mock("@linear/sdk");
 vi.mock("../src/SharedApplicationServer.js");
 vi.mock("../src/AgentSessionManager.js");
-vi.mock("cyrus-core", async (importOriginal) => {
+vi.mock("sylas-core", async (importOriginal) => {
 	const actual = (await importOriginal()) as any;
 	return {
 		...actual,
@@ -208,7 +208,7 @@ Issue: {{issue_identifier}}`;
 
 		mockConfig = {
 			proxyUrl: "http://localhost:3000",
-			cyrusHome: "/tmp/test-cyrus-home",
+			sylasHome: "/tmp/test-sylas-home",
 			repositories: [mockRepository],
 			handlers: {
 				createWorkspace: vi.fn().mockResolvedValue({
@@ -312,7 +312,7 @@ Issue: {{issue_identifier}}`;
 						identifier: "TEST-123",
 						team: { key: "TEST" },
 					},
-					comment: { body: "@cyrus work on this" },
+					comment: { body: "@sylas work on this" },
 				},
 			};
 
@@ -342,7 +342,7 @@ Issue: {{issue_identifier}}`;
 						identifier: "TEST-123",
 						team: { key: "TEST" },
 					},
-					comment: { body: "@cyrus take a screenshot" },
+					comment: { body: "@sylas take a screenshot" },
 				},
 			};
 
@@ -382,7 +382,7 @@ Issue: {{issue_identifier}}`;
 						identifier: "TEST-123",
 						team: { key: "TEST" },
 					},
-					comment: { body: "@cyrus take a screenshot" },
+					comment: { body: "@sylas take a screenshot" },
 				},
 			};
 
@@ -420,7 +420,7 @@ Issue: {{issue_identifier}}`;
 						identifier: "TEST-123",
 						team: { key: "TEST" },
 					},
-					comment: { body: "@cyrus take a browser screenshot" },
+					comment: { body: "@sylas take a browser screenshot" },
 				},
 			};
 
@@ -450,7 +450,7 @@ Issue: {{issue_identifier}}`;
 						identifier: "TEST-123",
 						team: { key: "TEST" },
 					},
-					comment: { body: "@cyrus take a browser screenshot" },
+					comment: { body: "@sylas take a browser screenshot" },
 				},
 			};
 
@@ -494,7 +494,7 @@ Issue: {{issue_identifier}}`;
 						identifier: "TEST-123",
 						team: { key: "TEST" },
 					},
-					comment: { body: "@cyrus click on a button" },
+					comment: { body: "@sylas click on a button" },
 				},
 			};
 
@@ -542,7 +542,7 @@ Issue: {{issue_identifier}}`;
 						identifier: "TEST-123",
 						team: { key: "TEST" },
 					},
-					comment: { body: "@cyrus record and export a gif" },
+					comment: { body: "@sylas record and export a gif" },
 				},
 			};
 
@@ -572,7 +572,7 @@ Issue: {{issue_identifier}}`;
 						identifier: "TEST-123",
 						team: { key: "TEST" },
 					},
-					comment: { body: "@cyrus record and export a gif" },
+					comment: { body: "@sylas record and export a gif" },
 				},
 			};
 
@@ -617,7 +617,7 @@ Issue: {{issue_identifier}}`;
 						identifier: "TEST-123",
 						team: { key: "TEST" },
 					},
-					comment: { body: "@cyrus take a screenshot" },
+					comment: { body: "@sylas take a screenshot" },
 				},
 			};
 
@@ -660,7 +660,7 @@ Issue: {{issue_identifier}}`;
 						identifier: "TEST-123",
 						team: { key: "TEST" },
 					},
-					comment: { body: "@cyrus take a screenshot with devtools" },
+					comment: { body: "@sylas take a screenshot with devtools" },
 				},
 			};
 
@@ -692,7 +692,7 @@ Issue: {{issue_identifier}}`;
 						identifier: "TEST-123",
 						team: { key: "TEST" },
 					},
-					comment: { body: "@cyrus take a screenshot with devtools" },
+					comment: { body: "@sylas take a screenshot with devtools" },
 				},
 			};
 
@@ -711,7 +711,7 @@ Issue: {{issue_identifier}}`;
 				devtoolsHook!,
 				"mcp__chrome-devtools__take_screenshot",
 				{
-					filePath: "/home/cyrus/cyrus-workspaces/PF-738/step1-screenshot.png",
+					filePath: "/home/sylas/sylas-workspaces/PF-738/step1-screenshot.png",
 					fullPage: true,
 				},
 				{

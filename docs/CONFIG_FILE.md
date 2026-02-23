@@ -1,8 +1,8 @@
-# Cyrus Configuration File
+# Sylas Configuration File
 
-Cyrus stores configuration in `~/.cyrus/config.json`. This file is created automatically during initial setup and can be edited manually to customize behavior.
+Sylas stores configuration in `~/.sylas/config.json`. This file is created automatically during initial setup and can be edited manually to customize behavior.
 
-Editing this manually only applies to those running the fully end-to-end self-hosted. Those who are paying for Cyrus, management of config.json is automated.
+Editing this manually only applies to those running the fully end-to-end self-hosted. Those who are paying for Sylas, management of config.json is automated.
 
 ---
 
@@ -52,7 +52,7 @@ Learn more about MCP: https://code.claude.com/docs/en/mcp
 
 ### `teamKeys` (array of strings)
 
-Routes Linear issues from specific teams to this repository. When specified, only issues from matching teams trigger Cyrus.
+Routes Linear issues from specific teams to this repository. When specified, only issues from matching teams trigger Sylas.
 
 Example: `["CEE", "FRONT", "BACK"]` - Only process issues from teams CEE, FRONT, and BACK
 
@@ -74,7 +74,7 @@ Example: `["backend", "api"]` - Only process issues that have the "backend" or "
 
 ## Routing Priority Order
 
-When multiple routing configurations are present, Cyrus evaluates them in the following priority order:
+When multiple routing configurations are present, Sylas evaluates them in the following priority order:
 
 1. **`routingLabels`** (highest priority) - Label-based routing
 2. **`projectKeys`** (medium priority) - Project-based routing
@@ -144,7 +144,7 @@ Note: Linear MCP tools (`mcp__linear`) are always included automatically.
 
 ## User Access Control
 
-Control which Linear users can delegate issues to Cyrus. Supports both global configuration and per-repository overrides.
+Control which Linear users can delegate issues to Sylas. Supports both global configuration and per-repository overrides.
 
 ### `userAccessControl` (object)
 
@@ -243,7 +243,7 @@ Path to a script that runs for all repositories when creating new worktrees. See
 
 ## Tool Configuration Priority
 
-When determining allowed tools, Cyrus follows this priority order:
+When determining allowed tools, Sylas follows this priority order:
 
 1. Repository-specific prompt configuration (`labelPrompts.debugger.allowedTools`)
 2. Global prompt defaults (`promptDefaults.debugger.allowedTools`)
@@ -307,4 +307,4 @@ Each repository configuration includes these required fields:
 - `linearToken` - OAuth access token
 - `linearRefreshToken` - OAuth refresh token (optional)
 
-These fields are managed automatically during setup. For self-hosted instances, use the `cyrus self-auth` and `cyrus self-add-repo` commands.
+These fields are managed automatically during setup. For self-hosted instances, use the `sylas self-auth` and `sylas self-add-repo` commands.

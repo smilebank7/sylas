@@ -28,7 +28,7 @@ import type {
 	SDKMessage,
 	SDKResultMessage,
 	SDKUserMessage,
-} from "cyrus-core";
+} from "sylas-core";
 import { CursorMessageFormatter } from "./formatter.js";
 import type {
 	CursorJsonEvent,
@@ -974,7 +974,7 @@ export class CursorRunner extends EventEmitter implements IAgentRunner {
 		this.syncProjectPermissionsConfig();
 
 		// Test/CI fallback: allow deterministic mock runs when cursor-agent cannot execute.
-		if (process.env.CYRUS_CURSOR_MOCK === "1") {
+		if (process.env.SYLAS_CURSOR_MOCK === "1") {
 			this.emitInitMessage();
 			this.handleEvent({
 				type: "message",
@@ -1212,7 +1212,7 @@ export class CursorRunner extends EventEmitter implements IAgentRunner {
 
 		mkdirSync(cursorDir, { recursive: true });
 		const backupPath = existsSync(configPath)
-			? `${configPath}.cyrus-backup-${Date.now()}-${process.pid}`
+			? `${configPath}.sylas-backup-${Date.now()}-${process.pid}`
 			: null;
 
 		try {
@@ -1362,7 +1362,7 @@ export class CursorRunner extends EventEmitter implements IAgentRunner {
 
 		mkdirSync(cursorDir, { recursive: true });
 		const backupPath = existsSync(configPath)
-			? `${configPath}.cyrus-backup-${Date.now()}-${process.pid}`
+			? `${configPath}.sylas-backup-${Date.now()}-${process.pid}`
 			: null;
 
 		try {
@@ -1475,7 +1475,7 @@ export class CursorRunner extends EventEmitter implements IAgentRunner {
 		const normalizedActual = actualVersion.trim();
 		const normalizedExpected = expectedVersion.trim();
 		if (normalizedActual !== normalizedExpected) {
-			return `cursor-agent version mismatch: expected \`${normalizedExpected}\` (tested), got \`${normalizedActual}\`. Set CYRUS_CURSOR_AGENT_VERSION to your version to skip this check, or upgrade cursor-agent to the tested version.`;
+			return `cursor-agent version mismatch: expected \`${normalizedExpected}\` (tested), got \`${normalizedActual}\`. Set SYLAS_CURSOR_AGENT_VERSION to your version to skip this check, or upgrade cursor-agent to the tested version.`;
 		}
 		return null;
 	}
@@ -1832,7 +1832,7 @@ export class CursorRunner extends EventEmitter implements IAgentRunner {
 
 	private setupLogging(sessionId: string): void {
 		try {
-			const logsDir = join(this.config.cyrusHome, "logs");
+			const logsDir = join(this.config.sylasHome, "logs");
 			mkdirSync(logsDir, { recursive: true });
 			this.logStream = createWriteStream(
 				join(logsDir, `cursor-${sessionId}.jsonl`),

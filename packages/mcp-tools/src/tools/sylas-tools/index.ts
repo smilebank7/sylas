@@ -68,9 +68,9 @@ function getMimeType(filename: string): string {
 }
 
 /**
- * Options for creating Cyrus tools with session management capabilities
+ * Options for creating Sylas tools with session management capabilities
  */
-export interface CyrusToolsOptions {
+export interface SylasToolsOptions {
 	/**
 	 * Callback to register a child-to-parent session mapping
 	 * Called when a new agent session is created
@@ -93,15 +93,15 @@ export interface CyrusToolsOptions {
 }
 
 /**
- * Create a standard MCP SDK server with Cyrus tools.
+ * Create a standard MCP SDK server with Sylas tools.
  */
-export function createCyrusToolsServer(
+export function createSylasToolsServer(
 	linearApiToken: string,
-	options: CyrusToolsOptions = {},
+	options: SylasToolsOptions = {},
 ): McpServer {
 	const linearClient = new LinearClient({ apiKey: linearApiToken });
 	const server = new McpServer({
-		name: "cyrus-tools",
+		name: "sylas-tools",
 		version: "1.0.0",
 	});
 
@@ -469,7 +469,7 @@ export function createCyrusToolsServer(
 				try {
 					await options.onFeedbackDelivery(agentSessionId, message);
 				} catch (error) {
-					console.error("[CyrusTools] Failed to deliver feedback:", error);
+					console.error("[SylasTools] Failed to deliver feedback:", error);
 				}
 			}
 

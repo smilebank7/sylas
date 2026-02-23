@@ -1,11 +1,11 @@
 /**
- * Shared constants used across Cyrus packages
+ * Shared constants used across Sylas packages
  */
 
 /**
- * Default proxy URL for Cyrus hosted services
+ * Default proxy URL for Sylas hosted services
  */
-export const DEFAULT_PROXY_URL = "https://cyrus-proxy.ceedar.workers.dev";
+export const DEFAULT_PROXY_URL = "https://sylas-proxy.ceedar.workers.dev";
 
 /**
  * Default directory name for git worktrees

@@ -2,7 +2,7 @@ import type {
 	SDKAssistantMessage,
 	SDKStatusMessage,
 	SDKSystemMessage,
-} from "cyrus-claude-runner";
+} from "sylas-claude-runner";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AgentSessionManager } from "../src/AgentSessionManager";
 import type { IActivitySink } from "../src/sinks/IActivitySink";

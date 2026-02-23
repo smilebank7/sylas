@@ -3,13 +3,13 @@ import {
 	getCoordinatorTools,
 	getReadOnlyTools,
 	getSafeTools,
-} from "cyrus-claude-runner";
+} from "sylas-claude-runner";
 import type {
-	CyrusAgentSession,
 	EdgeWorkerConfig,
 	ILogger,
 	RepositoryConfig,
-} from "cyrus-core";
+	SylasAgentSession,
+} from "sylas-core";
 
 import type { ProcedureAnalyzer } from "./procedures/index.js";
 
@@ -407,7 +407,7 @@ export class RunnerSelectionService {
 
 		// Linear MCP tools that should always be available
 		// See: https://docs.anthropic.com/en/docs/claude-code/iam#tool-specific-permission-rules
-		const linearMcpTools = ["mcp__linear", "mcp__cyrus-tools"];
+		const linearMcpTools = ["mcp__linear", "mcp__sylas-tools"];
 
 		// Combine and deduplicate
 		const allTools = [...new Set([...baseTools, ...linearMcpTools])];
@@ -494,7 +494,7 @@ export class RunnerSelectionService {
 	 * @returns Merged disallowed tools list
 	 */
 	public mergeSubroutineDisallowedTools(
-		session: CyrusAgentSession,
+		session: SylasAgentSession,
 		baseDisallowedTools: string[],
 		logContext: string,
 		procedureAnalyzer: ProcedureAnalyzer,

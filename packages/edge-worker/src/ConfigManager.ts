@@ -1,7 +1,7 @@
 import { EventEmitter } from "node:events";
 import { readFile } from "node:fs/promises";
 import { watch as chokidarWatch, type FSWatcher } from "chokidar";
-import type { EdgeWorkerConfig, ILogger, RepositoryConfig } from "cyrus-core";
+import type { EdgeWorkerConfig, ILogger, RepositoryConfig } from "sylas-core";
 
 /**
  * Describes the set of repository-level changes detected after a config

@@ -1,11 +1,11 @@
 {
-	"name": "cyrus-ai",
+	"name": "sylas-ai",
 	"version": "0.2.21",
 	"description": "AI-powered Linear issue automation using Claude",
 	"main": "dist/src/app.js",
 	"types": "dist/src/app.d.ts",
 	"bin": {
-		"cyrus": "./dist/src/app.js"
+		"sylas": "./dist/src/app.js"
 	},
 	"type": "module",
 	"scripts": {
@@ -27,7 +27,7 @@
 	},
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/ceedaragents/cyrus.git",
+		"url": "https://github.com/smilebank7/sylas.git",
 		"directory": "apps/cli"
 	},
 	"keywords": [
@@ -42,11 +42,11 @@
 	"dependencies": {
 		"@linear/sdk": "^64.0.0",
 		"commander": "^14.0.2",
-		"cyrus-claude-runner": "workspace:*",
-		"cyrus-cloudflare-tunnel-client": "workspace:*",
-		"cyrus-config-updater": "workspace:*",
-		"cyrus-core": "workspace:*",
-		"cyrus-edge-worker": "workspace:*",
+		"sylas-claude-runner": "workspace:*",
+		"sylas-cloudflare-tunnel-client": "workspace:*",
+		"sylas-config-updater": "workspace:*",
+		"sylas-core": "workspace:*",
+		"sylas-edge-worker": "workspace:*",
 		"dotenv": "^16.5.0",
 		"express": "^5.2.0",
 		"fastify": "^5.7.3",

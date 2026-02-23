@@ -11,10 +11,10 @@ export class ConfigService {
 	private configPath: string;
 
 	constructor(
-		cyrusHome: string,
+		sylasHome: string,
 		private logger: Logger,
 	) {
-		this.configPath = resolve(cyrusHome, "config.json");
+		this.configPath = resolve(sylasHome, "config.json");
 	}
 
 	/**
@@ -127,7 +127,7 @@ export class ConfigService {
 	save(config: EdgeConfig): void {
 		const configDir = dirname(this.configPath);
 
-		// Ensure the ~/.cyrus directory exists
+		// Ensure the ~/.sylas directory exists
 		if (!existsSync(configDir)) {
 			mkdirSync(configDir, { recursive: true });
 		}

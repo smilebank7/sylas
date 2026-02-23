@@ -1,10 +1,10 @@
-import type { SDKAssistantMessage, SDKUserMessage } from "cyrus-core";
+import type { SDKAssistantMessage, SDKUserMessage } from "sylas-core";
 import { describe, expect, it } from "vitest";
 import { CodexRunner } from "../src/CodexRunner.js";
 import type { CodexJsonEvent } from "../src/types.js";
 
 function createRunner(
-	workingDirectory = "/Users/connor/code/cyrus",
+	workingDirectory = "/Users/connor/code/sylas",
 ): CodexRunner {
 	const runner = new CodexRunner({
 		workingDirectory,
@@ -97,7 +97,7 @@ describe("CodexRunner tool event mapping", () => {
 	});
 
 	it("maps file_change events to Edit tool entries with normalized paths", () => {
-		const runner = createRunner("/Users/connor/code/cyrus");
+		const runner = createRunner("/Users/connor/code/sylas");
 
 		handleEvent(runner, {
 			type: "item.completed",
@@ -106,7 +106,7 @@ describe("CodexRunner tool event mapping", () => {
 				type: "file_change",
 				changes: [
 					{
-						path: "/Users/connor/code/cyrus/packages/codex-runner/src/CodexRunner.ts",
+						path: "/Users/connor/code/sylas/packages/codex-runner/src/CodexRunner.ts",
 						kind: "update",
 					},
 				],

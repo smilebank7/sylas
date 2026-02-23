@@ -6,11 +6,11 @@
 		"moduleResolution": "NodeNext",
 		"baseUrl": "../../",
 		"paths": {
-			"cyrus-core": ["packages/core/src"],
-			"cyrus-claude-runner": ["packages/claude-runner/src"],
-			"cyrus-simple-agent-runner": ["packages/simple-agent-runner/src"],
-			"cyrus-config-updater": ["packages/config-updater/src"],
-			"cyrus-edge-worker": [
+			"sylas-core": ["packages/core/src"],
+			"sylas-claude-runner": ["packages/claude-runner/src"],
+			"sylas-simple-agent-runner": ["packages/simple-agent-runner/src"],
+			"sylas-config-updater": ["packages/config-updater/src"],
+			"sylas-edge-worker": [
 				"packages/edge-worker/dist/edge-worker/src/index.d.ts"
 			]
 		}

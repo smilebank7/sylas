@@ -12,8 +12,8 @@ vi.mock("fs/promises", () => ({
 }));
 
 // Mock other dependencies
-vi.mock("cyrus-claude-runner");
-vi.mock("cyrus-codex-runner");
+vi.mock("sylas-claude-runner");
+vi.mock("sylas-codex-runner");
 vi.mock("@linear/sdk", async (importOriginal) => {
 	const actual = await importOriginal<typeof import("@linear/sdk")>();
 	return {
@@ -32,8 +32,8 @@ vi.mock("@linear/sdk", async (importOriginal) => {
 });
 vi.mock("../src/SharedApplicationServer.js");
 vi.mock("../src/AgentSessionManager.js");
-vi.mock("cyrus-core", async (importOriginal) => {
-	const actual = await importOriginal<typeof import("cyrus-core")>();
+vi.mock("sylas-core", async (importOriginal) => {
+	const actual = await importOriginal<typeof import("sylas-core")>();
 	return {
 		...actual,
 		PersistenceManager: vi.fn().mockImplementation(() => ({
@@ -60,7 +60,7 @@ describe("EdgeWorker - Version Tag Extraction", () => {
 		mockConfig = {
 			proxyUrl: "http://localhost:3000",
 			webhookPort: 3456,
-			cyrusHome: "/tmp/test-cyrus-home",
+			sylasHome: "/tmp/test-sylas-home",
 			repositories: [
 				{
 					id: "test-repo",
@@ -137,11 +137,11 @@ Repository: {{repository_name}}`;
 		vi.mocked(readFile).mockResolvedValue(templateWithVersion);
 
 		// Set log level to DEBUG so version logging (a debug message) is visible
-		const originalLogLevel = process.env.CYRUS_LOG_LEVEL;
-		process.env.CYRUS_LOG_LEVEL = "DEBUG";
+		const originalLogLevel = process.env.SYLAS_LOG_LEVEL;
+		process.env.SYLAS_LOG_LEVEL = "DEBUG";
 		// Recreate EdgeWorker with DEBUG log level
 		edgeWorker = new EdgeWorker(mockConfig);
-		process.env.CYRUS_LOG_LEVEL = originalLogLevel;
+		process.env.SYLAS_LOG_LEVEL = originalLogLevel;
 
 		// Spy on console.log to check for version logging
 		const logSpy = vi.spyOn(console, "log");

@@ -1,4 +1,4 @@
 export {
-	type CyrusToolsOptions,
-	createCyrusToolsServer,
-} from "./tools/cyrus-tools/index.js";
+	createSylasToolsServer,
+	type SylasToolsOptions,
+} from "./tools/sylas-tools/index.js";

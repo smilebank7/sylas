@@ -3,9 +3,9 @@ import {
 	LinearWebhookClient,
 	type LinearWebhookPayload,
 } from "@linear/sdk/webhooks";
-import type { IAgentEventTransport, TranslationContext } from "cyrus-core";
-import { createLogger, type ILogger } from "cyrus-core";
 import type { FastifyReply, FastifyRequest } from "fastify";
+import type { IAgentEventTransport, TranslationContext } from "sylas-core";
+import { createLogger, type ILogger } from "sylas-core";
 import { LinearMessageTranslator } from "./LinearMessageTranslator.js";
 import type {
 	LinearEventTransportConfig,

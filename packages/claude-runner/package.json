@@ -1,7 +1,7 @@
 {
-	"name": "cyrus-claude-runner",
+	"name": "sylas-claude-runner",
 	"version": "0.2.21",
-	"description": "Claude CLI execution wrapper for Cyrus",
+	"description": "Claude CLI execution wrapper for Sylas",
 	"type": "module",
 	"main": "dist/index.js",
 	"types": "dist/index.d.ts",
@@ -19,7 +19,7 @@
 		"@anthropic-ai/claude-agent-sdk": "^0.2.34",
 		"@anthropic-ai/sdk": "^0.73.0",
 		"@linear/sdk": "^64.0.0",
-		"cyrus-core": "workspace:*",
+		"sylas-core": "workspace:*",
 		"dotenv": "^16.4.5",
 		"fs-extra": "^11.3.2",
 		"openai": "^6.9.1",

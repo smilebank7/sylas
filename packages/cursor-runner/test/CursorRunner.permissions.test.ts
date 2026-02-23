@@ -24,12 +24,12 @@ describe("CursorRunner permissions mapping", () => {
 		for (const dir of tempDirs.splice(0)) {
 			rmSync(dir, { recursive: true, force: true });
 		}
-		delete process.env.CYRUS_CURSOR_MOCK;
+		delete process.env.SYLAS_CURSOR_MOCK;
 	});
 
 	it("maps Claude-style tool permissions to Cursor CLI permissions", () => {
 		const runner = new CursorRunner({
-			cyrusHome: "/tmp/cyrus",
+			sylasHome: "/tmp/sylas",
 			workingDirectory: "/tmp/repo",
 			allowedTools: [
 				"Read(src/**)",
@@ -61,7 +61,7 @@ describe("CursorRunner permissions mapping", () => {
 
 	it("scopes wildcard read/write permissions to workspace paths", () => {
 		const runner = new CursorRunner({
-			cyrusHome: "/tmp/cyrus",
+			sylasHome: "/tmp/sylas",
 			workingDirectory: "/tmp/repo",
 			allowedTools: ["Read", "Edit", "Write", "TodoWrite"],
 		});
@@ -92,7 +92,7 @@ describe("CursorRunner permissions mapping", () => {
 		);
 
 		const runner = new CursorRunner({
-			cyrusHome: "/tmp/cyrus",
+			sylasHome: "/tmp/sylas",
 			workingDirectory,
 			allowedTools: [
 				"Read(src/**)",
@@ -149,7 +149,7 @@ describe("CursorRunner permissions mapping", () => {
 		);
 
 		const runner = new CursorRunner({
-			cyrusHome: homeDirectory,
+			sylasHome: homeDirectory,
 			workingDirectory,
 			allowedTools: ["Read(src/**)", "Bash(git:*)"],
 			disallowedTools: ["Bash(rm:*)"],
@@ -185,9 +185,9 @@ describe("CursorRunner permissions mapping", () => {
 
 	it("removes temporary .cursor/cli.json after run when no original file exists", async () => {
 		const workingDirectory = createTempDir();
-		process.env.CYRUS_CURSOR_MOCK = "1";
+		process.env.SYLAS_CURSOR_MOCK = "1";
 		const runner = new CursorRunner({
-			cyrusHome: "/tmp/cyrus",
+			sylasHome: "/tmp/sylas",
 			workingDirectory,
 			allowedTools: ["Read(src/**)", "Bash(git:*)"],
 			disallowedTools: ["Bash(rm:*)"],

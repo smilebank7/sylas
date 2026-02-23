@@ -3,10 +3,10 @@ import {
 	type ILogger,
 	type LogContext,
 	type LogLevel,
-} from "cyrus-core";
+} from "sylas-core";
 
-// Re-export LogLevel from cyrus-core so existing consumers don't break
-export { LogLevel } from "cyrus-core";
+// Re-export LogLevel from sylas-core so existing consumers don't break
+export { LogLevel } from "sylas-core";
 
 /**
  * Logger configuration options

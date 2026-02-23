@@ -12,7 +12,7 @@ import type {
 	RepositoryConfig,
 	WebhookAgentSession,
 	WebhookComment,
-} from "cyrus-core";
+} from "sylas-core";
 import type { GitService } from "./GitService.js";
 import type { SubroutineDefinition } from "./procedures/index.js";
 

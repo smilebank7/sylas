@@ -1,4 +1,4 @@
-# cyrus-cloudflare-tunnel-client
+# sylas-cloudflare-tunnel-client
 
 Cloudflare tunnel client for establishing tunnels to local services.
 
@@ -15,13 +15,13 @@ This package provides a simplified client for establishing Cloudflare tunnels. I
 ## Installation
 
 ```bash
-npm install cyrus-cloudflare-tunnel-client
+npm install sylas-cloudflare-tunnel-client
 ```
 
 ## Usage
 
 ```typescript
-import { CloudflareTunnelClient } from 'cyrus-cloudflare-tunnel-client';
+import { CloudflareTunnelClient } from 'sylas-cloudflare-tunnel-client';
 
 // Create tunnel client
 const client = new CloudflareTunnelClient(

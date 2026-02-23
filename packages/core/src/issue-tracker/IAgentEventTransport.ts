@@ -46,7 +46,7 @@ export interface LinearProxyEventTransportConfig
 	platform: "linear";
 	verificationMode: "proxy";
 	/**
-	 * API key (CYRUS_API_KEY) for Bearer token authentication.
+	 * API key (SYLAS_API_KEY) for Bearer token authentication.
 	 */
 	secret: string;
 }
@@ -111,7 +111,7 @@ export interface AgentEventTransportEvents {
  * const transport = issueTracker.createEventTransport({
  *   fastifyServer: server.getFastifyInstance(),
  *   verificationMode: 'proxy',
- *   secret: process.env.CYRUS_API_KEY
+ *   secret: process.env.SYLAS_API_KEY
  * });
  *
  * // Register HTTP endpoints

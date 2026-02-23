@@ -2,8 +2,8 @@
  * Types for Slack event transport
  */
 
-import type { InternalMessage } from "cyrus-core";
 import type { FastifyInstance } from "fastify";
+import type { InternalMessage } from "sylas-core";
 
 /**
  * Verification mode for Slack webhooks forwarded from CYHOST
@@ -19,7 +19,7 @@ export interface SlackEventTransportConfig {
 	fastifyServer: FastifyInstance;
 	/** Verification mode: 'proxy' (webhooks forwarded from CYHOST) */
 	verificationMode: SlackVerificationMode;
-	/** Secret for verification (CYRUS_API_KEY for proxy mode) */
+	/** Secret for verification (SYLAS_API_KEY for proxy mode) */
 	secret: string;
 }
 

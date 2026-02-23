@@ -1,10 +1,10 @@
 #!/usr/bin/env bun
 
 /**
- * F1 Server - Testing Framework Server for Cyrus
+ * F1 Server - Testing Framework Server for Sylas
  *
  * This server starts the EdgeWorker in CLI platform mode, providing
- * a complete testing environment for the Cyrus agent system without
+ * a complete testing environment for the Sylas agent system without
  * external dependencies.
  *
  * Features:
@@ -15,43 +15,43 @@
  * - Zero `any` types
  *
  * Usage:
- *   CYRUS_PORT=3600 CYRUS_REPO_PATH=/path/to/repo bun run server.ts
+ *   SYLAS_PORT=3600 SYLAS_REPO_PATH=/path/to/repo bun run server.ts
  */
 
 import { existsSync, mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { getAllTools } from "cyrus-claude-runner";
+import { getAllTools } from "sylas-claude-runner";
 import {
 	DEFAULT_WORKTREES_DIR,
 	type EdgeWorkerConfig,
 	type RepositoryConfig,
-} from "cyrus-core";
-import { EdgeWorker } from "cyrus-edge-worker";
+} from "sylas-core";
+import { EdgeWorker } from "sylas-edge-worker";
 import { bold, cyan, dim, gray, green, success } from "./src/utils/colors.js";
 
 // ============================================================================
 // CONFIGURATION
 // ============================================================================
 
-const CYRUS_PORT = Number.parseInt(process.env.CYRUS_PORT || "3600", 10);
-const CYRUS_REPO_PATH = process.env.CYRUS_REPO_PATH || process.cwd();
-const CYRUS_HOME = join(tmpdir(), `cyrus-f1-${Date.now()}`);
+const SYLAS_PORT = Number.parseInt(process.env.SYLAS_PORT || "3600", 10);
+const SYLAS_REPO_PATH = process.env.SYLAS_REPO_PATH || process.cwd();
+const SYLAS_HOME = join(tmpdir(), `sylas-f1-${Date.now()}`);
 // Optional second repository path for multi-repo orchestration testing
-const CYRUS_REPO_PATH_2 = process.env.CYRUS_REPO_PATH_2;
-const MULTI_REPO_MODE = Boolean(CYRUS_REPO_PATH_2);
+const SYLAS_REPO_PATH_2 = process.env.SYLAS_REPO_PATH_2;
+const MULTI_REPO_MODE = Boolean(SYLAS_REPO_PATH_2);
 
 // Validate port
-if (Number.isNaN(CYRUS_PORT) || CYRUS_PORT < 1 || CYRUS_PORT > 65535) {
-	console.error(`❌ Invalid CYRUS_PORT: ${process.env.CYRUS_PORT}`);
+if (Number.isNaN(SYLAS_PORT) || SYLAS_PORT < 1 || SYLAS_PORT > 65535) {
+	console.error(`❌ Invalid SYLAS_PORT: ${process.env.SYLAS_PORT}`);
 	console.error("   Port must be between 1 and 65535");
 	process.exit(1);
 }
 
 // Validate repository path
-if (!existsSync(CYRUS_REPO_PATH)) {
-	console.error(`❌ Repository path does not exist: ${CYRUS_REPO_PATH}`);
-	console.error("   Set CYRUS_REPO_PATH to a valid directory");
+if (!existsSync(SYLAS_REPO_PATH)) {
+	console.error(`❌ Repository path does not exist: ${SYLAS_REPO_PATH}`);
+	console.error("   Set SYLAS_REPO_PATH to a valid directory");
 	process.exit(1);
 }
 
@@ -64,11 +64,11 @@ if (!existsSync(CYRUS_REPO_PATH)) {
  */
 function setupDirectories(): void {
 	const requiredDirs = [
-		CYRUS_HOME,
-		join(CYRUS_HOME, "repos"),
-		join(CYRUS_HOME, DEFAULT_WORKTREES_DIR),
-		join(CYRUS_HOME, "mcp-configs"),
-		join(CYRUS_HOME, "state"),
+		SYLAS_HOME,
+		join(SYLAS_HOME, "repos"),
+		join(SYLAS_HOME, DEFAULT_WORKTREES_DIR),
+		join(SYLAS_HOME, "mcp-configs"),
+		join(SYLAS_HOME, "state"),
 	];
 
 	for (const dir of requiredDirs) {
@@ -90,13 +90,13 @@ function createEdgeWorkerConfig(): EdgeWorkerConfig {
 	const repository: RepositoryConfig = {
 		id: "f1-test-repo",
 		name: "F1 Test Repository",
-		repositoryPath: CYRUS_REPO_PATH,
+		repositoryPath: SYLAS_REPO_PATH,
 		baseBranch: "main",
 		githubUrl: "https://github.com/f1-test/primary-repo",
 		linearWorkspaceId: "cli-workspace",
 		linearWorkspaceName: "F1 Testing",
 		linearToken: "f1-test-token", // Dummy token for CLI mode
-		workspaceBaseDir: join(CYRUS_HOME, DEFAULT_WORKTREES_DIR),
+		workspaceBaseDir: join(SYLAS_HOME, DEFAULT_WORKTREES_DIR),
 		isActive: true,
 		// Routing configuration for multi-repo support
 		routingLabels: ["primary", "main-repo"],
@@ -128,17 +128,17 @@ function createEdgeWorkerConfig(): EdgeWorkerConfig {
 	const repositories: RepositoryConfig[] = [repository];
 
 	// Add second repository if multi-repo mode is enabled
-	if (MULTI_REPO_MODE && CYRUS_REPO_PATH_2) {
+	if (MULTI_REPO_MODE && SYLAS_REPO_PATH_2) {
 		const secondaryRepository: RepositoryConfig = {
 			id: "f1-test-repo-secondary",
 			name: "F1 Secondary Repository",
-			repositoryPath: CYRUS_REPO_PATH_2,
+			repositoryPath: SYLAS_REPO_PATH_2,
 			baseBranch: "main",
 			githubUrl: "https://github.com/f1-test/secondary-repo",
 			linearWorkspaceId: "cli-workspace", // Same workspace for routing test
 			linearWorkspaceName: "F1 Testing",
 			linearToken: "f1-test-token-2",
-			workspaceBaseDir: join(CYRUS_HOME, DEFAULT_WORKTREES_DIR, "secondary"),
+			workspaceBaseDir: join(SYLAS_HOME, DEFAULT_WORKTREES_DIR, "secondary"),
 			isActive: true,
 			// Different routing labels for second repo
 			routingLabels: ["secondary", "backend"],
@@ -159,8 +159,8 @@ function createEdgeWorkerConfig(): EdgeWorkerConfig {
 	const config: EdgeWorkerConfig = {
 		platform: "cli" as const,
 		repositories,
-		cyrusHome: CYRUS_HOME,
-		serverPort: CYRUS_PORT,
+		sylasHome: SYLAS_HOME,
+		serverPort: SYLAS_PORT,
 		serverHost: "localhost",
 		claudeDefaultModel: "sonnet",
 		claudeDefaultFallbackModel: "haiku",
@@ -187,17 +187,17 @@ function displayConnectionInfo(): void {
 	console.log(success("Server started successfully"));
 	console.log("");
 	console.log(
-		`  ${cyan("Server:")}    ${bold(`http://localhost:${CYRUS_PORT}`)}`,
+		`  ${cyan("Server:")}    ${bold(`http://localhost:${SYLAS_PORT}`)}`,
 	);
 	console.log(
-		`  ${cyan("RPC:")}       ${bold(`http://localhost:${CYRUS_PORT}/cli/rpc`)}`,
+		`  ${cyan("RPC:")}       ${bold(`http://localhost:${SYLAS_PORT}/cli/rpc`)}`,
 	);
 	console.log(`  ${cyan("Platform:")}  ${bold("cli")}`);
-	console.log(`  ${cyan("Cyrus Home:")} ${dim(CYRUS_HOME)}`);
-	console.log(`  ${cyan("Repository:")} ${dim(CYRUS_REPO_PATH)}`);
+	console.log(`  ${cyan("Sylas Home:")} ${dim(SYLAS_HOME)}`);
+	console.log(`  ${cyan("Repository:")} ${dim(SYLAS_REPO_PATH)}`);
 	if (MULTI_REPO_MODE) {
 		console.log(
-			`  ${cyan("Multi-Repo:")} ${bold("enabled")} (${dim(CYRUS_REPO_PATH_2 || "")})`,
+			`  ${cyan("Multi-Repo:")} ${bold("enabled")} (${dim(SYLAS_REPO_PATH_2 || "")})`,
 		);
 		console.log(
 			dim("  Routing context will be included in orchestrator prompts"),

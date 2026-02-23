@@ -15,14 +15,14 @@ import {
 	type SDKMessage,
 	type SDKUserMessage,
 } from "@anthropic-ai/claude-agent-sdk";
-import type { AskUserQuestionInput } from "cyrus-core";
+import dotenv from "dotenv";
+import type { AskUserQuestionInput } from "sylas-core";
 import {
 	createLogger,
 	type IAgentRunner,
 	type ILogger,
 	StreamingPrompt,
-} from "cyrus-core";
-import dotenv from "dotenv";
+} from "sylas-core";
 
 // AbortError is no longer exported in v1.0.95, so we define it locally
 export class AbortError extends Error {
@@ -67,7 +67,7 @@ export class ClaudeRunner extends EventEmitter implements IAgentRunner {
 	private readableLogStream: WriteStream | null = null;
 	private messages: SDKMessage[] = [];
 	private streamingPrompt: StreamingPrompt | null = null;
-	private cyrusHome: string;
+	private sylasHome: string;
 	private formatter: IMessageFormatter;
 	private pendingResultMessage: SDKMessage | null = null;
 	private canUseToolCallback: CanUseTool | undefined;
@@ -76,7 +76,7 @@ export class ClaudeRunner extends EventEmitter implements IAgentRunner {
 		super();
 		this.config = config;
 		this.logger = config.logger ?? createLogger({ component: "ClaudeRunner" });
-		this.cyrusHome = config.cyrusHome;
+		this.sylasHome = config.sylasHome;
 		this.formatter = new ClaudeMessageFormatter();
 
 		// Create canUseTool callback if onAskUserQuestion is provided
@@ -599,7 +599,7 @@ export class ClaudeRunner extends EventEmitter implements IAgentRunner {
 		// If logging has already been set up and we now have versions, write the version file
 		if (this.logStream && versions) {
 			try {
-				const logsDir = join(this.cyrusHome, "logs");
+				const logsDir = join(this.sylasHome, "logs");
 				const workspaceName =
 					this.config.workspaceName ||
 					(this.config.workingDirectory
@@ -759,7 +759,7 @@ export class ClaudeRunner extends EventEmitter implements IAgentRunner {
 	}
 
 	/**
-	 * Set up logging to .cyrus directory
+	 * Set up logging to .sylas directory
 	 */
 	private setupLogging(): void {
 		try {
@@ -773,8 +773,8 @@ export class ClaudeRunner extends EventEmitter implements IAgentRunner {
 				this.readableLogStream = null;
 			}
 
-			// Create logs directory structure: <cyrusHome>/logs/<workspace-name>/
-			const logsDir = join(this.cyrusHome, "logs");
+			// Create logs directory structure: <sylasHome>/logs/<workspace-name>/
+			const logsDir = join(this.sylasHome, "logs");
 
 			// Get workspace name from config or extract from working directory
 			const workspaceName =
@@ -853,7 +853,10 @@ export class ClaudeRunner extends EventEmitter implements IAgentRunner {
 						// Extract text content only, skip tool use noise
 						const textBlocks = message.message.content
 							.filter((block: { type: string }) => block.type === "text")
-							.map((block: { type: string; text?: string }) => (block as { text: string }).text)
+							.map(
+								(block: { type: string; text?: string }) =>
+									(block as { text: string }).text,
+							)
 							.join("");
 
 						if (textBlocks.trim()) {
@@ -866,7 +869,8 @@ export class ClaudeRunner extends EventEmitter implements IAgentRunner {
 						const toolBlocks = message.message.content
 							.filter((block: { type: string }) => block.type === "tool_use")
 							.filter(
-								(block: { type: string; name?: string }) => (block as { name: string }).name !== "TodoWrite",
+								(block: { type: string; name?: string }) =>
+									(block as { name: string }).name !== "TodoWrite",
 							); // Filter out TodoWrite as it's noisy
 
 						if (toolBlocks.length > 0) {
@@ -901,7 +905,10 @@ export class ClaudeRunner extends EventEmitter implements IAgentRunner {
 					) {
 						const userContent = message.message.content
 							.filter((block: { type: string }) => block.type === "text")
-							.map((block: { type: string; text?: string }) => (block as { text: string }).text)
+							.map(
+								(block: { type: string; text?: string }) =>
+									(block as { text: string }).text,
+							)
 							.join("");
 
 						if (userContent.trim()) {

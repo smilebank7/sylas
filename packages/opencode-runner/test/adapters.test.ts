@@ -19,7 +19,7 @@ import type {
 	ToolStatePending,
 	ToolStateRunning,
 } from "@opencode-ai/sdk";
-import type { SDKAssistantMessage, SDKUserMessage } from "cyrus-core";
+import type { SDKAssistantMessage, SDKUserMessage } from "sylas-core";
 import { describe, expect, it } from "vitest";
 import {
 	createUserMessage,

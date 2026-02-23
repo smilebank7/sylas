@@ -1,16 +1,16 @@
 /**
- * @module cyrus-gemini-runner
+ * @module sylas-gemini-runner
  *
- * Gemini CLI integration for Cyrus agent framework.
+ * Gemini CLI integration for Sylas agent framework.
  * Provides a provider-agnostic wrapper around the Gemini CLI that implements
  * the IAgentRunner interface, allowing seamless switching between Claude and Gemini.
  *
  * @example
  * ```typescript
- * import { GeminiRunner } from 'cyrus-gemini-runner';
+ * import { GeminiRunner } from 'sylas-gemini-runner';
  *
  * const runner = new GeminiRunner({
- *   cyrusHome: '/home/user/.cyrus',
+ *   sylasHome: '/home/user/.sylas',
  *   workingDirectory: '/path/to/repo',
  *   model: 'gemini-2.5-flash',
  *   autoApprove: true
@@ -144,7 +144,7 @@ export type {
 	// Tool result types
 	ListDirectoryToolResult,
 	ListDirectoryToolUseEvent,
-	// Re-export McpServerConfig from cyrus-core for convenience
+	// Re-export McpServerConfig from sylas-core for convenience
 	McpServerConfig,
 	ReadFileParameters,
 	ReadFileToolResult,

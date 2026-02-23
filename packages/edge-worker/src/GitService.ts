@@ -3,8 +3,8 @@ import { existsSync, mkdirSync, statSync } from "node:fs";
 import { homedir } from "node:os";
 import { basename, join, resolve as pathResolve } from "node:path";
 
-import type { Issue, RepositoryConfig, Workspace } from "cyrus-core";
-import { createLogger, type ILogger } from "cyrus-core";
+import type { Issue, RepositoryConfig, Workspace } from "sylas-core";
+import { createLogger, type ILogger } from "sylas-core";
 import { WorktreeIncludeService } from "./WorktreeIncludeService.js";
 
 /**
@@ -463,19 +463,19 @@ export class GitService {
 			const isWindows = process.platform === "win32";
 			const setupScripts = [
 				{
-					file: "cyrus-setup.sh",
+					file: "sylas-setup.sh",
 					platform: "unix",
 				},
 				{
-					file: "cyrus-setup.ps1",
+					file: "sylas-setup.ps1",
 					platform: "windows",
 				},
 				{
-					file: "cyrus-setup.cmd",
+					file: "sylas-setup.cmd",
 					platform: "windows",
 				},
 				{
-					file: "cyrus-setup.bat",
+					file: "sylas-setup.bat",
 					platform: "windows",
 				},
 			];

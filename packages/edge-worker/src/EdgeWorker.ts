@@ -3,20 +3,21 @@ import { EventEmitter } from "node:events";
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import { basename, join } from "node:path";
 import { LinearClient } from "@linear/sdk";
+import { Sessions, streamableHttp } from "fastify-mcp";
 import type {
 	HookCallbackMatcher,
 	HookEvent,
 	McpServerConfig,
 	PostToolUseHookInput,
 	SDKMessage,
-} from "cyrus-claude-runner";
+} from "sylas-claude-runner";
 import {
 	ClaudeRunner,
 	createImageToolsServer,
 	createSoraToolsServer,
-} from "cyrus-claude-runner";
-import { CodexRunner } from "cyrus-codex-runner";
-import { ConfigUpdater } from "cyrus-config-updater";
+} from "sylas-claude-runner";
+import { CodexRunner } from "sylas-codex-runner";
+import { ConfigUpdater } from "sylas-config-updater";
 import type {
 	AgentActivityCreateInput,
 	AgentEvent,
@@ -24,7 +25,6 @@ import type {
 	AgentSessionCreatedWebhook,
 	AgentSessionPromptedWebhook,
 	ContentUpdateMessage,
-	CyrusAgentSession,
 	EdgeWorkerConfig,
 	GuidanceRule,
 	IAgentRunner,
@@ -37,17 +37,18 @@ import type {
 	IssueUpdateWebhook,
 	RepositoryConfig,
 	SerializableEdgeWorkerState,
-	SerializedCyrusAgentSession,
-	SerializedCyrusAgentSessionEntry,
+	SerializedSylasAgentSession,
+	SerializedSylasAgentSessionEntry,
 	SessionStartMessage,
 	StopSignalMessage,
+	SylasAgentSession,
 	UnassignMessage,
 	UserPromptMessage,
 	Webhook,
 	WebhookAgentSession,
 	WebhookComment,
 	WebhookIssue,
-} from "cyrus-core";
+} from "sylas-core";
 import {
 	CLIIssueTrackerService,
 	CLIRPCServer,
@@ -67,9 +68,9 @@ import {
 	isUserPromptMessage,
 	PersistenceManager,
 	resolvePath,
-} from "cyrus-core";
-import { CursorRunner } from "cyrus-cursor-runner";
-import { GeminiRunner } from "cyrus-gemini-runner";
+} from "sylas-core";
+import { CursorRunner } from "sylas-cursor-runner";
+import { GeminiRunner } from "sylas-gemini-runner";
 import {
 	extractCommentAuthor,
 	extractCommentBody,
@@ -89,22 +90,21 @@ import {
 	isIssueCommentPayload,
 	isPullRequestReviewCommentPayload,
 	stripMention,
-} from "cyrus-github-event-transport";
+} from "sylas-github-event-transport";
 import {
 	LinearEventTransport,
 	LinearIssueTrackerService,
 	type LinearOAuthConfig,
-} from "cyrus-linear-event-transport";
+} from "sylas-linear-event-transport";
 import {
-	type CyrusToolsOptions,
-	createCyrusToolsServer,
-} from "cyrus-mcp-tools";
-import { OpenCodeRunner } from "cyrus-opencode-runner";
+	createSylasToolsServer,
+	type SylasToolsOptions,
+} from "sylas-mcp-tools";
+import { OpenCodeRunner } from "sylas-opencode-runner";
 import {
 	SlackEventTransport,
 	type SlackWebhookEvent,
-} from "cyrus-slack-event-transport";
-import { Sessions, streamableHttp } from "fastify-mcp";
+} from "sylas-slack-event-transport";
 import { ActivityPoster } from "./ActivityPoster.js";
 import { AgentSessionManager } from "./AgentSessionManager.js";
 import { AskUserQuestionHandler } from "./AskUserQuestionHandler.js";
@@ -149,15 +149,15 @@ export declare interface EdgeWorker {
 	): boolean;
 }
 
-type CyrusToolsMcpContext = {
+type SylasToolsMcpContext = {
 	contextId?: string;
 };
 
-type CyrusToolsMcpContextEntry = {
+type SylasToolsMcpContextEntry = {
 	contextId: string;
 	linearToken: string;
 	parentSessionId?: string;
-	prebuiltServer?: ReturnType<typeof createCyrusToolsServer>;
+	prebuiltServer?: ReturnType<typeof createSylasToolsServer>;
 	createdAt: number;
 };
 
@@ -182,7 +182,7 @@ export class EdgeWorker extends EventEmitter {
 	private configUpdater: ConfigUpdater | null = null; // Single config updater for configuration updates
 	private persistenceManager: PersistenceManager;
 	private sharedApplicationServer: SharedApplicationServer;
-	private cyrusHome: string;
+	private sylasHome: string;
 	private globalSessionRegistry: GlobalSessionRegistry; // Centralized session storage across all repositories
 	private childToParentAgentSession: Map<string, string> = new Map(); // Maps child agentSessionId to parent agentSessionId
 	private procedureAnalyzer: ProcedureAnalyzer; // Intelligent workflow routing
@@ -202,20 +202,20 @@ export class EdgeWorker extends EventEmitter {
 	private activityPoster: ActivityPoster;
 	private configManager: ConfigManager;
 	private promptBuilder: PromptBuilder;
-	private readonly cyrusToolsMcpEndpoint = "/mcp/cyrus-tools";
-	private cyrusToolsMcpRegistered = false;
-	private cyrusToolsMcpContexts = new Map<string, CyrusToolsMcpContextEntry>();
-	private cyrusToolsMcpRequestContext =
-		new AsyncLocalStorage<CyrusToolsMcpContext>();
-	private cyrusToolsMcpSessions = new Sessions<any>();
+	private readonly sylasToolsMcpEndpoint = "/mcp/sylas-tools";
+	private sylasToolsMcpRegistered = false;
+	private sylasToolsMcpContexts = new Map<string, SylasToolsMcpContextEntry>();
+	private sylasToolsMcpRequestContext =
+		new AsyncLocalStorage<SylasToolsMcpContext>();
+	private sylasToolsMcpSessions = new Sessions<any>();
 
 	constructor(config: EdgeWorkerConfig) {
 		super();
 		this.config = config;
-		this.cyrusHome = config.cyrusHome;
+		this.sylasHome = config.sylasHome;
 		this.logger = createLogger({ component: "EdgeWorker" });
 		this.persistenceManager = new PersistenceManager(
-			join(this.cyrusHome, "state"),
+			join(this.sylasHome, "state"),
 		);
 
 		// Initialize GitHub comment service for posting replies to GitHub PRs
@@ -227,7 +227,7 @@ export class EdgeWorker extends EventEmitter {
 		// Initialize procedure router with haiku for fast classification
 		// Default to claude runner
 		this.procedureAnalyzer = new ProcedureAnalyzer({
-			cyrusHome: this.cyrusHome,
+			sylasHome: this.sylasHome,
 			model: "gemini-2.5-flash-lite",
 			timeoutMs: 100000,
 			runnerType: "gemini",
@@ -444,7 +444,7 @@ export class EdgeWorker extends EventEmitter {
 		// Initialize user access control with global and per-repository configs
 		const repoAccessConfigs = new Map<
 			string,
-			import("cyrus-core").UserAccessControlConfig | undefined
+			import("sylas-core").UserAccessControlConfig | undefined
 		>();
 		for (const repo of config.repositories) {
 			if (repo.isActive !== false) {
@@ -457,7 +457,7 @@ export class EdgeWorker extends EventEmitter {
 		);
 
 		// Initialize extracted service modules
-		this.attachmentService = new AttachmentService(this.logger, this.cyrusHome);
+		this.attachmentService = new AttachmentService(this.logger, this.sylasHome);
 		this.runnerSelectionService = new RunnerSelectionService(
 			this.config,
 			this.logger,
@@ -582,7 +582,7 @@ export class EdgeWorker extends EventEmitter {
 			// Get appropriate secret based on mode
 			const secret = useDirectWebhooks
 				? process.env.LINEAR_WEBHOOK_SECRET || ""
-				: process.env.CYRUS_API_KEY || "";
+				: process.env.SYLAS_API_KEY || "";
 
 			this.linearEventTransport = new LinearEventTransport({
 				fastifyServer: this.sharedApplicationServer.getFastifyInstance(),
@@ -628,8 +628,8 @@ export class EdgeWorker extends EventEmitter {
 		// 3. Create and register ConfigUpdater (both platforms)
 		this.configUpdater = new ConfigUpdater(
 			this.sharedApplicationServer.getFastifyInstance(),
-			this.cyrusHome,
-			process.env.CYRUS_API_KEY || "",
+			this.sylasHome,
+			process.env.SYLAS_API_KEY || "",
 		);
 
 		// Register config update routes
@@ -637,14 +637,14 @@ export class EdgeWorker extends EventEmitter {
 
 		this.logger.info("✅ Config updater registered");
 		this.logger.info(
-			"   Routes: /api/update/cyrus-config, /api/update/cyrus-env,",
+			"   Routes: /api/update/sylas-config, /api/update/sylas-env,",
 		);
 		this.logger.info(
 			"           /api/update/repository, /api/test-mcp, /api/configure-mcp",
 		);
 
-		// 3. Register MCP endpoint for cyrus-tools on the same Fastify server/port
-		await this.registerCyrusToolsMcpEndpoint();
+		// 3. Register MCP endpoint for sylas-tools on the same Fastify server/port
+		await this.registerSylasToolsMcpEndpoint();
 		// 4. Register /status endpoint for process activity monitoring
 		this.registerStatusEndpoint();
 
@@ -677,7 +677,7 @@ export class EdgeWorker extends EventEmitter {
 
 		fastify.get("/version", async (_request, reply) => {
 			return reply.status(200).send({
-				cyrus_cli_version: this.config.version ?? null,
+				sylas_cli_version: this.config.version ?? null,
 			});
 		});
 
@@ -687,11 +687,11 @@ export class EdgeWorker extends EventEmitter {
 
 	/**
 	 * Register the GitHub event transport for receiving forwarded GitHub webhooks from CYHOST.
-	 * This creates a /github-webhook endpoint that handles @cyrusagent mentions on GitHub PRs.
+	 * This creates a /github-webhook endpoint that handles @sylasagent mentions on GitHub PRs.
 	 */
 	private registerGitHubEventTransport(): void {
 		// Use the same verification approach as Linear webhooks
-		// In proxy mode: Bearer token (CYRUS_API_KEY)
+		// In proxy mode: Bearer token (SYLAS_API_KEY)
 		// In direct/cloud mode: GitHub HMAC-SHA256 signature
 		const useSignatureVerification =
 			process.env.GITHUB_WEBHOOK_SECRET != null &&
@@ -699,7 +699,7 @@ export class EdgeWorker extends EventEmitter {
 		const verificationMode = useSignatureVerification ? "signature" : "proxy";
 		const secret = useSignatureVerification
 			? process.env.GITHUB_WEBHOOK_SECRET!
-			: process.env.CYRUS_API_KEY || "";
+			: process.env.SYLAS_API_KEY || "";
 
 		this.gitHubEventTransport = new GitHubEventTransport({
 			fastifyServer: this.sharedApplicationServer.getFastifyInstance(),
@@ -756,7 +756,7 @@ export class EdgeWorker extends EventEmitter {
 		this.chatSessionHandler = new ChatSessionHandler(
 			slackAdapter,
 			{
-				cyrusHome: this.cyrusHome,
+				sylasHome: this.sylasHome,
 				defaultModel: this.config.defaultModel,
 				defaultFallbackModel: this.config.defaultFallbackModel,
 				mcpConfig,
@@ -775,7 +775,7 @@ export class EdgeWorker extends EventEmitter {
 		this.slackEventTransport = new SlackEventTransport({
 			fastifyServer: this.sharedApplicationServer.getFastifyInstance(),
 			verificationMode: "proxy",
-			secret: process.env.CYRUS_API_KEY || "",
+			secret: process.env.SYLAS_API_KEY || "",
 		});
 
 		this.slackEventTransport.on("event", (event: SlackWebhookEvent) => {
@@ -883,7 +883,7 @@ export class EdgeWorker extends EventEmitter {
 				return;
 			}
 
-			// Strip the @cyrusagent mention to get the task instructions
+			// Strip the @sylasagent mention to get the task instructions
 			const taskInstructions = stripMention(commentBody);
 
 			// Create workspace (git worktree) for the PR branch
@@ -1268,7 +1268,7 @@ ${taskInstructions}
 	}
 
 	/**
-	 * Compute the current status of the Cyrus process
+	 * Compute the current status of the Sylas process
 	 * @returns "idle" if the process can be safely restarted, "busy" if work is in progress
 	 */
 	private computeStatus(): "idle" | "busy" {
@@ -1335,9 +1335,9 @@ ${taskInstructions}
 		// Clear event transport (no explicit cleanup needed, routes are removed when server stops)
 		this.linearEventTransport = null;
 		this.configUpdater = null;
-		this.cyrusToolsMcpContexts.clear();
-		this.cyrusToolsMcpSessions.removeAllListeners();
-		this.cyrusToolsMcpRegistered = false;
+		this.sylasToolsMcpContexts.clear();
+		this.sylasToolsMcpSessions.removeAllListeners();
+		this.sylasToolsMcpRegistered = false;
 
 		// Stop shared application server (this also stops Cloudflare tunnel if running)
 		await this.sharedApplicationServer.stop();
@@ -1375,7 +1375,7 @@ ${taskInstructions}
 		log.debug(
 			`Searching for parent session ${parentSessionId} across all repositories`,
 		);
-		let parentSession: CyrusAgentSession | undefined;
+		let parentSession: SylasAgentSession | undefined;
 		let parentRepo: RepositoryConfig | undefined;
 		let parentAgentSessionManager: AgentSessionManager | undefined;
 
@@ -1469,7 +1469,7 @@ ${taskInstructions}
 	 */
 	private async handleSubroutineTransition(
 		sessionId: string,
-		session: CyrusAgentSession,
+		session: SylasAgentSession,
 		repo: RepositoryConfig,
 		agentSessionManager: AgentSessionManager,
 	): Promise<void> {
@@ -1532,7 +1532,7 @@ ${taskInstructions}
 	 */
 	private async handleValidationLoopFixer(
 		sessionId: string,
-		session: CyrusAgentSession,
+		session: SylasAgentSession,
 		repo: RepositoryConfig,
 		agentSessionManager: AgentSessionManager,
 		fixerPrompt: string,
@@ -1568,7 +1568,7 @@ ${taskInstructions}
 	 */
 	private async handleValidationLoopRerun(
 		sessionId: string,
-		session: CyrusAgentSession,
+		session: SylasAgentSession,
 		repo: RepositoryConfig,
 		agentSessionManager: AgentSessionManager,
 	): Promise<void> {
@@ -1869,7 +1869,7 @@ ${taskInstructions}
 										agentSessionId: session.externalSessionId,
 										content: {
 											type: "response",
-											body: `**Repository Removed from Configuration**\n\nThis repository (\`${repo.name}\`) has been removed from the Cyrus configuration. All active sessions for this repository have been stopped.\n\nIf you need to continue working on this issue, please contact your administrator to restore the repository configuration.`,
+											body: `**Repository Removed from Configuration**\n\nThis repository (\`${repo.name}\`) has been removed from the Sylas configuration. All active sessions for this repository have been stopped.\n\nIf you need to continue working on this issue, please contact your administrator to restore the repository configuration.`,
 										},
 									},
 									"repository removal",
@@ -1928,7 +1928,7 @@ ${taskInstructions}
 		this.activeWebhookCount++;
 
 		// Log verbose webhook info if enabled
-		if (process.env.CYRUS_WEBHOOK_DEBUG === "true") {
+		if (process.env.SYLAS_WEBHOOK_DEBUG === "true") {
 			this.logger.debug(
 				`Full webhook payload:`,
 				JSON.stringify(webhook, null, 2),
@@ -1955,7 +1955,7 @@ ${taskInstructions}
 				// Handle issue title/description/attachments updates - feed changes into active session
 				await this.handleIssueContentUpdate(webhook);
 			} else {
-				if (process.env.CYRUS_WEBHOOK_DEBUG === "true") {
+				if (process.env.SYLAS_WEBHOOK_DEBUG === "true") {
 					this.logger.debug(
 						`Unhandled webhook type: ${(webhook as any).action}`,
 					);
@@ -1995,7 +1995,7 @@ ${taskInstructions}
 		// TODO: When legacy handlers are removed, restore activeWebhookCount tracking here.
 
 		// Log verbose message info if enabled
-		if (process.env.CYRUS_WEBHOOK_DEBUG === "true") {
+		if (process.env.SYLAS_WEBHOOK_DEBUG === "true") {
 			this.logger.debug(
 				`Internal message received: ${message.source}/${message.action}`,
 				JSON.stringify(message, null, 2),
@@ -2017,7 +2017,7 @@ ${taskInstructions}
 			} else {
 				// This branch should never be reached due to exhaustive type checking
 				// If it is reached, log the unexpected message for debugging
-				if (process.env.CYRUS_WEBHOOK_DEBUG === "true") {
+				if (process.env.SYLAS_WEBHOOK_DEBUG === "true") {
 					const unexpectedMessage = message as InternalMessage;
 					this.logger.debug(
 						`Unhandled message action: ${unexpectedMessage.action}`,
@@ -2177,7 +2177,7 @@ ${taskInstructions}
 	): Promise<void> {
 		// Check if issue update trigger is enabled (defaults to true if not set)
 		if (this.config.issueUpdateTrigger === false) {
-			if (process.env.CYRUS_WEBHOOK_DEBUG === "true") {
+			if (process.env.SYLAS_WEBHOOK_DEBUG === "true") {
 				this.logger.debug(
 					"Issue update trigger is disabled, skipping issue content update",
 				);
@@ -2200,7 +2200,7 @@ ${taskInstructions}
 		// Get cached repository (updates should only be processed for issues with active sessions)
 		const repository = this.getCachedRepository(issueId);
 		if (!repository) {
-			if (process.env.CYRUS_WEBHOOK_DEBUG === "true") {
+			if (process.env.SYLAS_WEBHOOK_DEBUG === "true") {
 				this.logger.debug(
 					`No cached repository for issue update webhook ${issueIdentifier} (no active sessions to notify)`,
 				);
@@ -2230,7 +2230,7 @@ ${taskInstructions}
 		// Find session(s) for this issue (may be running or paused between subroutines)
 		const sessions = agentSessionManager.getSessionsByIssueId(issueId);
 		if (sessions.length === 0) {
-			if (process.env.CYRUS_WEBHOOK_DEBUG === "true") {
+			if (process.env.SYLAS_WEBHOOK_DEBUG === "true") {
 				this.logger.debug(
 					`No sessions found for issue ${issueIdentifier} to receive update`,
 				);
@@ -2248,7 +2248,7 @@ ${taskInstructions}
 			}
 			const workspaceFolderName = basename(firstSession.workspace.path);
 			const attachmentsDir = join(
-				this.cyrusHome,
+				this.sylasHome,
 				workspaceFolderName,
 				"attachments",
 			);
@@ -2443,7 +2443,7 @@ ${taskInstructions}
 		// Pre-create attachments directory even if no attachments exist yet
 		const workspaceFolderName = basename(workspace.path);
 		const attachmentsDir = join(
-			this.cyrusHome,
+			this.sylasHome,
 			workspaceFolderName,
 			"attachments",
 		);
@@ -2512,7 +2512,7 @@ ${taskInstructions}
 				);
 
 			if (routingResult.type === "none") {
-				if (process.env.CYRUS_WEBHOOK_DEBUG === "true") {
+				if (process.env.SYLAS_WEBHOOK_DEBUG === "true") {
 					this.logger.info(
 						`No repository configured for webhook from workspace ${webhook.organizationId}`,
 					);
@@ -2997,7 +2997,7 @@ ${taskInstructions}
 		// Find the agent session manager that contains this session
 		// We don't need repository lookup - just search all managers
 		let foundManager: AgentSessionManager | null = null;
-		let foundSession: CyrusAgentSession | null = null;
+		let foundSession: SylasAgentSession | null = null;
 
 		for (const manager of this.agentSessionManagers.values()) {
 			const session = manager.getSession(agentSessionId);
@@ -3276,7 +3276,7 @@ ${taskInstructions}
 		// Always set up attachments directory, even if no attachments in current comment
 		const workspaceFolderName = basename(session.workspace.path);
 		const attachmentsDir = join(
-			this.cyrusHome,
+			this.sylasHome,
 			workspaceFolderName,
 			"attachments",
 		);
@@ -3907,8 +3907,8 @@ ${taskInstructions}
 		return this.attachmentService.generateNewAttachmentManifest(result);
 	}
 
-	private async registerCyrusToolsMcpEndpoint(): Promise<void> {
-		if (this.cyrusToolsMcpRegistered) {
+	private async registerSylasToolsMcpEndpoint(): Promise<void> {
+		if (this.sylasToolsMcpRegistered) {
 			return;
 		}
 
@@ -3918,7 +3918,7 @@ ${taskInstructions}
 			typeof fastify.addHook !== "function"
 		) {
 			console.warn(
-				"[EdgeWorker] Skipping cyrus-tools MCP endpoint registration: Fastify instance does not support register/addHook",
+				"[EdgeWorker] Skipping sylas-tools MCP endpoint registration: Fastify instance does not support register/addHook",
 			);
 			return;
 		}
@@ -3932,72 +3932,72 @@ ${taskInstructions}
 						: "";
 			const requestPath = rawUrl.split("?")[0];
 
-			if (requestPath !== this.cyrusToolsMcpEndpoint) {
+			if (requestPath !== this.sylasToolsMcpEndpoint) {
 				done();
 				return;
 			}
 
 			if (
-				!this.isCyrusToolsMcpAuthorizationValid(request.headers?.authorization)
+				!this.isSylasToolsMcpAuthorizationValid(request.headers?.authorization)
 			) {
 				_reply.code(401).send({
-					error: "Unauthorized cyrus-tools MCP request",
+					error: "Unauthorized sylas-tools MCP request",
 				});
 				done();
 				return;
 			}
 
-			const rawContextHeader = request.headers?.["x-cyrus-mcp-context-id"];
+			const rawContextHeader = request.headers?.["x-sylas-mcp-context-id"];
 			const contextId = Array.isArray(rawContextHeader)
 				? rawContextHeader[0]
 				: rawContextHeader;
 
-			this.cyrusToolsMcpRequestContext.run({ contextId }, () => {
+			this.sylasToolsMcpRequestContext.run({ contextId }, () => {
 				done();
 			});
 		});
 
-		this.cyrusToolsMcpSessions.on("connected", (sessionId) => {
+		this.sylasToolsMcpSessions.on("connected", (sessionId) => {
 			console.log(
-				`[EdgeWorker] cyrus-tools MCP session connected: ${sessionId}`,
+				`[EdgeWorker] sylas-tools MCP session connected: ${sessionId}`,
 			);
 		});
 
-		this.cyrusToolsMcpSessions.on("terminated", (sessionId) => {
+		this.sylasToolsMcpSessions.on("terminated", (sessionId) => {
 			console.log(
-				`[EdgeWorker] cyrus-tools MCP session terminated: ${sessionId}`,
+				`[EdgeWorker] sylas-tools MCP session terminated: ${sessionId}`,
 			);
 		});
 
-		this.cyrusToolsMcpSessions.on("error", (error) => {
-			console.error("[EdgeWorker] cyrus-tools MCP session error:", error);
+		this.sylasToolsMcpSessions.on("error", (error) => {
+			console.error("[EdgeWorker] sylas-tools MCP session error:", error);
 		});
 
 		await fastify.register(streamableHttp, {
 			stateful: true,
-			mcpEndpoint: this.cyrusToolsMcpEndpoint,
-			sessions: this.cyrusToolsMcpSessions,
+			mcpEndpoint: this.sylasToolsMcpEndpoint,
+			sessions: this.sylasToolsMcpSessions,
 			createServer: async () => {
 				const contextId =
-					this.cyrusToolsMcpRequestContext.getStore()?.contextId;
+					this.sylasToolsMcpRequestContext.getStore()?.contextId;
 				if (!contextId) {
 					throw new Error(
-						"Missing x-cyrus-mcp-context-id header for cyrus-tools MCP request",
+						"Missing x-sylas-mcp-context-id header for sylas-tools MCP request",
 					);
 				}
 
-				const context = this.cyrusToolsMcpContexts.get(contextId);
+				const context = this.sylasToolsMcpContexts.get(contextId);
 				if (!context) {
 					throw new Error(
-						`Unknown cyrus-tools MCP context '${contextId}'. Build MCP config before connecting.`,
+						`Unknown sylas-tools MCP context '${contextId}'. Build MCP config before connecting.`,
 					);
 				}
 
 				const sdkServer =
 					context.prebuiltServer ||
-					createCyrusToolsServer(
+					createSylasToolsServer(
 						context.linearToken,
-						this.createCyrusToolsOptions(context.parentSessionId),
+						this.createSylasToolsOptions(context.parentSessionId),
 					);
 				context.prebuiltServer = undefined;
 
@@ -4005,13 +4005,13 @@ ${taskInstructions}
 			},
 		});
 
-		this.cyrusToolsMcpRegistered = true;
+		this.sylasToolsMcpRegistered = true;
 		console.log(
-			`✅ Cyrus tools MCP endpoint registered at ${this.cyrusToolsMcpEndpoint}`,
+			`✅ Sylas tools MCP endpoint registered at ${this.sylasToolsMcpEndpoint}`,
 		);
 	}
 
-	private createCyrusToolsOptions(parentSessionId?: string): CyrusToolsOptions {
+	private createSylasToolsOptions(parentSessionId?: string): SylasToolsOptions {
 		return {
 			parentSessionId,
 			onSessionCreated: (childSessionId, parentId) => {
@@ -4162,7 +4162,7 @@ ${taskInstructions}
 		return true;
 	}
 
-	private buildCyrusToolsMcpContextId(
+	private buildSylasToolsMcpContextId(
 		repository: RepositoryConfig,
 		parentSessionId?: string,
 	): string {
@@ -4173,7 +4173,7 @@ ${taskInstructions}
 		return `${repository.id}:anon:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`;
 	}
 
-	private getCyrusToolsMcpUrl(): string {
+	private getSylasToolsMcpUrl(): string {
 		const server = this.sharedApplicationServer as {
 			getPort?: () => number;
 		};
@@ -4181,59 +4181,59 @@ ${taskInstructions}
 			typeof server.getPort === "function"
 				? server.getPort()
 				: this.config.serverPort || this.config.webhookPort || 3456;
-		return `http://127.0.0.1:${port}${this.cyrusToolsMcpEndpoint}`;
+		return `http://127.0.0.1:${port}${this.sylasToolsMcpEndpoint}`;
 	}
 
-	private pruneCyrusToolsMcpContexts(maxEntries: number = 500): void {
-		if (this.cyrusToolsMcpContexts.size <= maxEntries) {
+	private pruneSylasToolsMcpContexts(maxEntries: number = 500): void {
+		if (this.sylasToolsMcpContexts.size <= maxEntries) {
 			return;
 		}
 
-		const entriesByAge = Array.from(this.cyrusToolsMcpContexts.entries()).sort(
+		const entriesByAge = Array.from(this.sylasToolsMcpContexts.entries()).sort(
 			(a, b) => a[1].createdAt - b[1].createdAt,
 		);
 
-		const pruneCount = this.cyrusToolsMcpContexts.size - maxEntries;
+		const pruneCount = this.sylasToolsMcpContexts.size - maxEntries;
 		for (let i = 0; i < pruneCount; i++) {
 			const entry = entriesByAge[i];
 			if (!entry) {
 				break;
 			}
 			const [contextId] = entry;
-			this.cyrusToolsMcpContexts.delete(contextId);
+			this.sylasToolsMcpContexts.delete(contextId);
 		}
 	}
 
 	/**
-	 * Build MCP configuration with automatic Linear server injection and cyrus-tools over Fastify MCP.
+	 * Build MCP configuration with automatic Linear server injection and sylas-tools over Fastify MCP.
 	 */
 	private buildMcpConfig(
 		repository: RepositoryConfig,
 		parentSessionId?: string,
 	): Record<string, McpServerConfig> {
-		const contextId = this.buildCyrusToolsMcpContextId(
+		const contextId = this.buildSylasToolsMcpContextId(
 			repository,
 			parentSessionId,
 		);
 
 		// Prebuild one SDK server for this context so callback wiring remains deterministic.
 		// If the client reconnects and needs another server, the endpoint creates a fresh one.
-		const prebuiltServer = createCyrusToolsServer(
+		const prebuiltServer = createSylasToolsServer(
 			repository.linearToken,
-			this.createCyrusToolsOptions(parentSessionId),
+			this.createSylasToolsOptions(parentSessionId),
 		);
 
-		this.cyrusToolsMcpContexts.set(contextId, {
+		this.sylasToolsMcpContexts.set(contextId, {
 			contextId,
 			linearToken: repository.linearToken,
 			parentSessionId,
 			prebuiltServer,
 			createdAt: Date.now(),
 		});
-		this.pruneCyrusToolsMcpContexts();
+		this.pruneSylasToolsMcpContexts();
 
-		const cyrusToolsAuthorizationHeader =
-			this.getCyrusToolsMcpAuthorizationHeaderValue();
+		const sylasToolsAuthorizationHeader =
+			this.getSylasToolsMcpAuthorizationHeaderValue();
 
 		// Always inject the Linear MCP servers with the repository's token
 		// https://linear.app/docs/mcp
@@ -4245,14 +4245,14 @@ ${taskInstructions}
 					Authorization: `Bearer ${repository.linearToken}`,
 				},
 			},
-			"cyrus-tools": {
+			"sylas-tools": {
 				type: "http",
-				url: this.getCyrusToolsMcpUrl(),
+				url: this.getSylasToolsMcpUrl(),
 				headers: {
-					"x-cyrus-mcp-context-id": contextId,
-					...(cyrusToolsAuthorizationHeader
+					"x-sylas-mcp-context-id": contextId,
+					...(sylasToolsAuthorizationHeader
 						? {
-								Authorization: cyrusToolsAuthorizationHeader,
+								Authorization: sylasToolsAuthorizationHeader,
 							}
 						: {}),
 				},
@@ -4281,18 +4281,18 @@ ${taskInstructions}
 		return mcpConfig;
 	}
 
-	private getCyrusToolsMcpAuthorizationHeaderValue(): string | undefined {
-		const apiKey = process.env.CYRUS_API_KEY?.trim();
+	private getSylasToolsMcpAuthorizationHeaderValue(): string | undefined {
+		const apiKey = process.env.SYLAS_API_KEY?.trim();
 		if (!apiKey) {
 			return undefined;
 		}
 		return `Bearer ${apiKey}`;
 	}
 
-	private isCyrusToolsMcpAuthorizationValid(
+	private isSylasToolsMcpAuthorizationValid(
 		rawAuthorizationHeader: unknown,
 	): boolean {
-		const expectedHeader = this.getCyrusToolsMcpAuthorizationHeaderValue();
+		const expectedHeader = this.getSylasToolsMcpAuthorizationHeaderValue();
 		if (!expectedHeader) {
 			return true;
 		}
@@ -4317,7 +4317,7 @@ ${taskInstructions}
 	 */
 	private async buildSessionPrompt(
 		isNewSession: boolean,
-		session: CyrusAgentSession,
+		session: SylasAgentSession,
 		fullIssue: Issue,
 		repository: RepositoryConfig,
 		promptBody: string,
@@ -4647,7 +4647,7 @@ ${input.userComment}
 	 * @returns Object containing the runner config and runner type to use
 	 */
 	private buildAgentRunnerConfig(
-		session: CyrusAgentSession,
+		session: SylasAgentSession,
 		repository: RepositoryConfig,
 		sessionId: string,
 		systemPrompt: string | undefined,
@@ -4824,7 +4824,7 @@ ${input.userComment}
 			disallowedTools,
 			allowedDirectories,
 			workspaceName: session.issue?.identifier || session.issueId,
-			cyrusHome: this.cyrusHome,
+			sylasHome: this.sylasHome,
 			mcpConfigPath,
 			mcpConfig,
 			appendSystemPrompt: systemPrompt || "",
@@ -4857,7 +4857,7 @@ ${input.userComment}
 		// Cursor runner-specific wiring for offline/headless harness
 		// We pass these as loose fields to avoid widening core runner types.
 		if (runnerType === "cursor") {
-			const approvalPolicy = (process.env.CYRUS_APPROVAL_POLICY || "never") as
+			const approvalPolicy = (process.env.SYLAS_APPROVAL_POLICY || "never") as
 				| "never"
 				| "on-request"
 				| "on-failure"
@@ -4870,24 +4870,24 @@ ${input.userComment}
 			// Keep headless runs non-interactive by default in F1/CLI environments
 			(config as any).askForApproval = approvalPolicy;
 			(config as any).approveMcps = true;
-			// Default to enabled sandbox for tool execution isolation; set CYRUS_SANDBOX=disabled to disable
-			(config as any).sandbox = (process.env.CYRUS_SANDBOX || "enabled") as
+			// Default to enabled sandbox for tool execution isolation; set SYLAS_SANDBOX=disabled to disable
+			(config as any).sandbox = (process.env.SYLAS_SANDBOX || "enabled") as
 				| "enabled"
 				| "disabled";
 			// Expected cursor-agent version for pre-run validation; mismatch posts error to Linear
 			(config as any).cursorAgentVersion =
-				process.env.CYRUS_CURSOR_AGENT_VERSION || undefined;
+				process.env.SYLAS_CURSOR_AGENT_VERSION || undefined;
 		}
 
 		// OpenCode runner-specific wiring
 		if (runnerType === "opencode") {
 			(config as any).autoApprove = true;
 			(config as any).opencodeAgent =
-				process.env.CYRUS_OPENCODE_AGENT || undefined;
+				process.env.SYLAS_OPENCODE_AGENT || undefined;
 			(config as any).opencodeReportedModel =
-				process.env.CYRUS_OPENCODE_REPORTED_MODEL || undefined;
+				process.env.SYLAS_OPENCODE_REPORTED_MODEL || undefined;
 			(config as any).opencodePlugins = (
-				process.env.CYRUS_OPENCODE_PLUGINS || ""
+				process.env.SYLAS_OPENCODE_PLUGINS || ""
 			)
 				.split(",")
 				.map((value) => value.trim())
@@ -4958,7 +4958,7 @@ ${input.userComment}
 	 * @returns Merged disallowed tools list
 	 */
 	private mergeSubroutineDisallowedTools(
-		session: CyrusAgentSession,
+		session: SylasAgentSession,
 		baseDisallowedTools: string[],
 		logContext: string,
 	): string[] {
@@ -5121,11 +5121,11 @@ ${input.userComment}
 		// Serialize Agent Session state for all repositories
 		const agentSessions: Record<
 			string,
-			Record<string, SerializedCyrusAgentSession>
+			Record<string, SerializedSylasAgentSession>
 		> = {};
 		const agentSessionEntries: Record<
 			string,
-			Record<string, SerializedCyrusAgentSessionEntry[]>
+			Record<string, SerializedSylasAgentSessionEntry[]>
 		> = {};
 		for (const [
 			repositoryId,
@@ -5273,7 +5273,7 @@ ${input.userComment}
 	 * This ensures the currentSubroutine is reset to avoid suppression issues
 	 */
 	private async rerouteProcedureForSession(
-		session: CyrusAgentSession,
+		session: SylasAgentSession,
 		sessionId: string,
 		agentSessionManager: AgentSessionManager,
 		promptBody: string,
@@ -5375,7 +5375,7 @@ ${input.userComment}
 	 * 2. Route procedure if NOT streaming (resets currentSubroutine)
 	 * 3. Add to stream if streaming, OR resume session if not
 	 *
-	 * @param session The Cyrus agent session
+	 * @param session The Sylas agent session
 	 * @param repository Repository configuration
 	 * @param sessionId Linear agent activity session ID
 	 * @param agentSessionManager Agent session manager instance
@@ -5387,7 +5387,7 @@ ${input.userComment}
 	 * @returns true if message was added to stream, false if session was resumed
 	 */
 	private async handlePromptWithStreamingCheck(
-		session: CyrusAgentSession,
+		session: SylasAgentSession,
 		repository: RepositoryConfig,
 		sessionId: string,
 		agentSessionManager: AgentSessionManager,
@@ -5478,7 +5478,7 @@ ${input.userComment}
 	/**
 	 * Resume or create an Agent session with the given prompt
 	 * This is the core logic for handling prompted agent activities
-	 * @param session The Cyrus agent session
+	 * @param session The Sylas agent session
 	 * @param repository The repository configuration
 	 * @param sessionId The Linear agent session ID
 	 * @param agentSessionManager The agent session manager
@@ -5487,7 +5487,7 @@ ${input.userComment}
 	 * @param isNewSession Whether this is a new session
 	 */
 	async resumeAgentSession(
-		session: CyrusAgentSession,
+		session: SylasAgentSession,
 		repository: RepositoryConfig,
 		sessionId: string,
 		agentSessionManager: AgentSessionManager,
@@ -5593,7 +5593,7 @@ ${input.userComment}
 		// Set up attachments directory
 		const workspaceFolderName = basename(session.workspace.path);
 		const attachmentsDir = join(
-			this.cyrusHome,
+			this.sylasHome,
 			workspaceFolderName,
 			"attachments",
 		);

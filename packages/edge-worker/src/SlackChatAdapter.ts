@@ -1,12 +1,12 @@
-import type { IAgentRunner, ILogger } from "cyrus-core";
-import { createLogger } from "cyrus-core";
+import type { IAgentRunner, ILogger } from "sylas-core";
+import { createLogger } from "sylas-core";
 import {
 	SlackMessageService,
 	SlackReactionService,
 	type SlackThreadMessage,
 	type SlackWebhookEvent,
 	stripMention as stripSlackMention,
-} from "cyrus-slack-event-transport";
+} from "sylas-slack-event-transport";
 import type { ChatPlatformAdapter } from "./ChatSessionHandler.js";
 
 /**

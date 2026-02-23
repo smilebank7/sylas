@@ -4,7 +4,7 @@
  * Provides a human-readable DSL for testing EdgeWorker.assemblePrompt() method.
  */
 
-import type { RepositoryConfig } from "cyrus-core";
+import type { RepositoryConfig } from "sylas-core";
 import { expect } from "vitest";
 import { EdgeWorker } from "../src/EdgeWorker.js";
 import type { EdgeWorkerConfig } from "../src/types.js";
@@ -32,7 +32,7 @@ export function createTestWorker(
 	}
 
 	const config: EdgeWorkerConfig = {
-		cyrusHome: "/tmp/test-cyrus-home",
+		sylasHome: "/tmp/test-sylas-home",
 		claudeDefaultModel: "sonnet",
 		linearWorkspaceSlug,
 		repositories,

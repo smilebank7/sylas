@@ -1,33 +1,33 @@
-# cyrus-ai
+# sylas-ai
 
 AI development agent for Linear powered by Claude Code.
 
 ## Installation
 
 ```bash
-npm install -g cyrus-ai
+npm install -g sylas-ai
 ```
 
 ## Usage
 
 ### Start the agent
 ```bash
-cyrus
+sylas
 ```
 
 ### Available Commands
 
-- **`cyrus`** - Start the edge worker (default)
-- **`cyrus add-repository`** - Add a new repository configuration
-- **`cyrus check-tokens`** - Check the status of all Linear tokens
-- **`cyrus refresh-token`** - Refresh a specific Linear token
+- **`sylas`** - Start the edge worker (default)
+- **`sylas add-repository`** - Add a new repository configuration
+- **`sylas check-tokens`** - Check the status of all Linear tokens
+- **`sylas refresh-token`** - Refresh a specific Linear token
 
 ### Adding Repositories
 
-After initial setup, you can add additional repositories without restarting Cyrus:
+After initial setup, you can add additional repositories without restarting Sylas:
 
 ```bash
-cyrus add-repository
+sylas add-repository
 ```
 
 This command will:
@@ -46,7 +46,7 @@ The interactive wizard will prompt you for:
 
 ### Environment Variables
 
-- `CYRUS_HOST_EXTERNAL` - Set to `true` to allow external connections (listens on `0.0.0.0` instead of `localhost`). Default: `false`
+- `SYLAS_HOST_EXTERNAL` - Set to `true` to allow external connections (listens on `0.0.0.0` instead of `localhost`). Default: `false`
   - Use this when running in Docker containers or when you need external access to the webhook server
   - When `true`: Server listens on `0.0.0.0` (all interfaces)
   - When `false` or unset: Server listens on `localhost` (local access only)

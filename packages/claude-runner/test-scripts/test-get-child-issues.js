@@ -25,14 +25,14 @@ async function testGetChildIssues() {
 		includeSystemRole: true,
 		apiKey: "test-key", // Not needed for MCP operations
 		mcpConfig: {
-			"cyrus-tools": {
+			"sylas-tools": {
 				type: "inline-sdk",
 				module: path.join(
 					__dirname,
 					"..",
 					"dist",
 					"tools",
-					"cyrus-tools",
+					"sylas-tools",
 					"index.js",
 				),
 				initParams: [linearToken],
@@ -47,17 +47,17 @@ async function testGetChildIssues() {
 
 		// List available tools
 		const toolList = await runner.listTools();
-		console.log("Available Cyrus tools:");
-		const cyrusTools = toolList.tools.filter((tool) =>
+		console.log("Available Sylas tools:");
+		const sylasTools = toolList.tools.filter((tool) =>
 			tool.name.startsWith("linear_"),
 		);
-		for (const tool of cyrusTools) {
+		for (const tool of sylasTools) {
 			console.log(`  - ${tool.name}: ${tool.description}`);
 		}
 		console.log("");
 
 		// Check if our new tool is available
-		const hasGetChildIssues = cyrusTools.some(
+		const hasGetChildIssues = sylasTools.some(
 			(tool) => tool.name === "linear_get_child_issues",
 		);
 		if (hasGetChildIssues) {

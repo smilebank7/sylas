@@ -1,5 +1,5 @@
 {
-	"name": "cyrus-simple-agent-runner",
+	"name": "sylas-simple-agent-runner",
 	"version": "0.2.21",
 	"description": "Simple agent runner for enumerated responses",
 	"type": "module",
@@ -17,8 +17,8 @@
 	},
 	"dependencies": {
 		"@anthropic-ai/claude-agent-sdk": "^0.2.34",
-		"cyrus-claude-runner": "workspace:*",
-		"cyrus-core": "workspace:*"
+		"sylas-claude-runner": "workspace:*",
+		"sylas-core": "workspace:*"
 	},
 	"devDependencies": {
 		"@types/node": "^20.0.0",

@@ -1,7 +1,7 @@
 {
-	"name": "cyrus-cursor-runner",
+	"name": "sylas-cursor-runner",
 	"version": "0.2.21",
-	"description": "Cursor Agent CLI process wrapper for Cyrus",
+	"description": "Cursor Agent CLI process wrapper for Sylas",
 	"type": "module",
 	"main": "dist/index.js",
 	"types": "dist/index.d.ts",
@@ -16,7 +16,7 @@
 		"typecheck": "tsc --noEmit"
 	},
 	"dependencies": {
-		"cyrus-core": "workspace:*"
+		"sylas-core": "workspace:*"
 	},
 	"devDependencies": {
 		"@types/node": "^20.0.0",

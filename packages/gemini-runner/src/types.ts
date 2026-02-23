@@ -10,7 +10,7 @@ import type {
 	AgentSessionInfo,
 	McpServerConfig,
 	SDKMessage,
-} from "cyrus-core";
+} from "sylas-core";
 
 /**
  * Gemini CLI MCP server configuration
@@ -54,7 +54,7 @@ export interface GeminiMcpServerConfig {
 	excludeTools?: string[];
 }
 
-// Re-export McpServerConfig from cyrus-core for convenience
+// Re-export McpServerConfig from sylas-core for convenience
 export type { McpServerConfig };
 
 // Re-export event types from schemas (derived from Zod schemas)
@@ -179,7 +179,7 @@ export {
  * @example
  * ```typescript
  * const config: GeminiRunnerConfig = {
- *   cyrusHome: '/home/user/.cyrus',
+ *   sylasHome: '/home/user/.sylas',
  *   workingDirectory: '/path/to/repo',
  *   mcpConfig: {
  *     linear: {

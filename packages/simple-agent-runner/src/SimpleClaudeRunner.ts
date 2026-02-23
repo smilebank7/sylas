@@ -1,11 +1,11 @@
 import type { SDKMessage } from "@anthropic-ai/claude-agent-sdk";
-import { ClaudeRunner } from "cyrus-claude-runner";
+import { ClaudeRunner } from "sylas-claude-runner";
 import { NoResponseError, SessionError } from "./errors.js";
 import { SimpleAgentRunner } from "./SimpleAgentRunner.js";
 import type { SimpleAgentQueryOptions } from "./types.js";
 
 /**
- * Concrete implementation using ClaudeRunner from cyrus-claude-runner package.
+ * Concrete implementation using ClaudeRunner from sylas-claude-runner package.
  *
  * This implementation uses the Claude Agent SDK to execute queries and
  * constrains the responses to an enumerated set.
@@ -29,7 +29,7 @@ export class SimpleClaudeRunner<T extends string> extends SimpleAgentRunner<T> {
 		// Create ClaudeRunner with configuration
 		const runner = new ClaudeRunner({
 			workingDirectory: this.config.workingDirectory,
-			cyrusHome: this.config.cyrusHome,
+			sylasHome: this.config.sylasHome,
 			model: this.config.model,
 			fallbackModel: this.config.fallbackModel,
 			maxTurns: this.config.maxTurns,

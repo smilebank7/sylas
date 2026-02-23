@@ -10,9 +10,9 @@ import type {
 	SDKSystemMessage,
 	SDKUserMessage,
 } from "@anthropic-ai/claude-agent-sdk";
-import type { ILogger, OnAskUserQuestion } from "cyrus-core";
+import type { ILogger, OnAskUserQuestion } from "sylas-core";
 
-export type { OnAskUserQuestion } from "cyrus-core";
+export type { OnAskUserQuestion } from "sylas-core";
 
 /**
  * Output format configuration for structured outputs
@@ -35,7 +35,7 @@ export interface ClaudeRunnerConfig {
 	fallbackModel?: string; // Fallback model if primary model is unavailable
 	maxTurns?: number; // Maximum number of turns before completing the session
 	tools?: string[]; // Built-in tools available in model context (empty array disables all tools)
-	cyrusHome: string; // Cyrus home directory
+	sylasHome: string; // Sylas home directory
 	logger?: ILogger; // Optional logger instance
 	promptVersions?: {
 		// Optional prompt template version information
