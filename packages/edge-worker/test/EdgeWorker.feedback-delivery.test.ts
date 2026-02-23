@@ -106,7 +106,8 @@ describe("EdgeWorker - Feedback Delivery", () => {
 		mockAgentSessionManager = {
 			hasAgentRunner: vi.fn().mockReturnValue(false),
 			getSession: vi.fn().mockReturnValue(null),
-			on: vi.fn(), // EventEmitter method
+			handleClaudeMessage: vi.fn().mockResolvedValue(undefined),
+			on: vi.fn(),
 		};
 
 		// Mock AgentSessionManager constructor
@@ -166,6 +167,21 @@ describe("EdgeWorker - Feedback Delivery", () => {
 		};
 
 		edgeWorker = new EdgeWorker(mockConfig);
+
+		const fullDevelopmentProcedure = (
+			edgeWorker as any
+		).procedureAnalyzer.getProcedure("full-development");
+		if (!fullDevelopmentProcedure) {
+			throw new Error("full-development procedure not found");
+		}
+		vi.spyOn(
+			(edgeWorker as any).procedureAnalyzer,
+			"determineRoutine",
+		).mockResolvedValue({
+			classification: "code",
+			procedure: fullDevelopmentProcedure,
+			reasoning: "mocked for feedback tests",
+		});
 
 		// Spy on resumeAgentSession method
 		resumeAgentSessionSpy = vi

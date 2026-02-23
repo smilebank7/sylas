@@ -11,9 +11,13 @@ services:
     env_file:
       - .env
     volumes:
-      - sylas-data:/root/.sylas
-      - sylas-repos:/root/.sylas/repos
-      - opencode-data:/root/.local/share/opencode
+      # Host-managed auth & state (bind mounts, NOT Docker volumes).
+      # Run `scripts/auth-bootstrap.sh` on host BEFORE first container start.
+      - ./state/sylas:/root/.sylas
+      - ./state/opencode:/root/.local/share/opencode
+      - ./state/opencode-config:/root/.config/opencode
+      - ./state/gh:/root/.config/gh
+      - ./state/git-credentials:/root/.git-credentials-host:ro
     networks:
       - traefik-public
     labels:
@@ -26,8 +30,3 @@ services:
       - traefik.http.routers.sylas-http.entrypoints=web
       - traefik.http.middlewares.sylas-redirect.redirectscheme.scheme=https
       - traefik.http.routers.sylas-http.middlewares=sylas-redirect
-
-volumes:
-  sylas-data:
-  sylas-repos:
-  opencode-data:
