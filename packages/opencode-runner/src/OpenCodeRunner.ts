@@ -141,6 +141,13 @@ export class OpenCodeRunner extends EventEmitter implements IAgentRunner {
 			// Note: opencode CLI 1.x does not support --auto-approve, --system-prompt, --max-turns
 			// These are handled via opencode config or ignored
 
+			if (this.config.resumeSessionId) {
+				args.push("--session", this.config.resumeSessionId);
+				console.log(
+					`[OpenCodeRunner] Resuming session: ${this.config.resumeSessionId}`,
+				);
+			}
+
 			if (opencodeAgent) {
 				args.push("--agent", opencodeAgent);
 			}
