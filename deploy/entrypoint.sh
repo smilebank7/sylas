@@ -1,45 +1,44 @@
 #!/bin/sh
-# =============================================================================
-# Sylas Docker entrypoint
-# Configures git credentials, OpenCode auth, and oh-my-opencode plugin.
-# =============================================================================
+set -e
 
-# --- Git credentials ---------------------------------------------------------
-if [ -n "$GITHUB_TOKEN" ]; then
-  git config --global credential.helper store
-  echo "https://x-access-token:${GITHUB_TOKEN}@github.com" > /root/.git-credentials
-  echo "GitHub credentials configured"
+OPENCODE_DATA="/root/.local/share/opencode"
+OPENCODE_CONFIG="/root/.config/opencode"
+
+fail() { echo "FATAL: $1" >&2; exit 1; }
+
+# --- Fail-fast: required host-mounted auth -----------------------------------
+
+if [ ! -f "$OPENCODE_DATA/auth.json" ]; then
+  fail "OpenCode auth.json not found at $OPENCODE_DATA/auth.json
+Run scripts/auth-bootstrap.sh on the HOST first, then restart the container."
 fi
 
-# --- OpenCode auth.json (Anthropic OAuth) ------------------------------------
-# Seeds the Anthropic OAuth credential on first run.
-# Once seeded (or manually added via `opencode auth login`), the file persists
-# in the opencode-data volume and is NOT overwritten.
-OPENCODE_DATA="/root/.local/share/opencode"
-mkdir -p "$OPENCODE_DATA"
-if [ -n "$ANTHROPIC_API_KEY" ] && [ ! -f "$OPENCODE_DATA/auth.json" ]; then
-  printf '{"anthropic":{"type":"oauth","access":"%s","refresh":"","expires":9999999999999}}' \
-    "$ANTHROPIC_API_KEY" > "$OPENCODE_DATA/auth.json"
-  chmod 600 "$OPENCODE_DATA/auth.json"
-  echo "OpenCode Anthropic OAuth credential seeded"
+# --- Git credentials (from host bind mount) ----------------------------------
+
+if [ -s /root/.git-credentials-host ]; then
+  git config --global credential.helper store
+  cp /root/.git-credentials-host /root/.git-credentials
+  chmod 600 /root/.git-credentials
+  echo "Git credentials loaded from host bind mount"
+elif [ -n "$GITHUB_TOKEN" ]; then
+  git config --global credential.helper store
+  echo "https://x-access-token:${GITHUB_TOKEN}@github.com" > /root/.git-credentials
+  echo "Git credentials configured from GITHUB_TOKEN env"
+else
+  echo "WARN: No git credentials found (no bind mount, no GITHUB_TOKEN)"
 fi
 
 # --- OpenCode config (oh-my-opencode plugin) ---------------------------------
-# Always written so the plugin path stays in sync with the globally installed
-# oh-my-opencode package inside the Docker image.
-OPENCODE_CONFIG="/root/.config/opencode"
+
 mkdir -p "$OPENCODE_CONFIG"
 cat > "$OPENCODE_CONFIG/opencode.json" << 'OCJSON'
 {
   "plugin": ["file:///usr/local/lib/node_modules/oh-my-opencode/dist/index.js"]
 }
 OCJSON
-echo "OpenCode config written (oh-my-opencode via file://)"
 
-# --- oh-my-opencode agent model config --------------------------------------
-# Default: Claude Max20 subscription tier.
-# Edit the models/variants below to match your subscription.
-cat > "$OPENCODE_CONFIG/oh-my-opencode.json" << 'OMOJSON'
+if [ ! -f "$OPENCODE_CONFIG/oh-my-opencode.json" ]; then
+  cat > "$OPENCODE_CONFIG/oh-my-opencode.json" << 'OMOJSON'
 {
   "agents": {
     "sisyphus":         { "model": "anthropic/claude-opus-4-6",      "variant": "max" },
@@ -63,9 +62,10 @@ cat > "$OPENCODE_CONFIG/oh-my-opencode.json" << 'OMOJSON'
   }
 }
 OMOJSON
-echo "oh-my-opencode agent config written"
+  echo "oh-my-opencode default config written"
+fi
 
-# --- Prevent OpenCode from treating the OAuth token as a plain API key -------
+# --- Prevent env vars leaking into OpenCode as API keys ----------------------
 unset ANTHROPIC_API_KEY
 
 exec "$@"
