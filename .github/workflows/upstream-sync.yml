@@ -118,13 +118,18 @@ GHEOF
             LINEAR_ID=$(echo "$LINEAR_RESULT" | jq -r '.data.issueCreate.issue.identifier')
             LINEAR_URL=$(echo "$LINEAR_RESULT" | jq -r '.data.issueCreate.issue.url')
             echo "   → Linear: ${LINEAR_ID} ${LINEAR_URL}"
-            # --- GitHub Issue (dedup tracker) — only after Linear succeeds ---
-            gh issue create \
+            # --- GitHub Issue (dedup tracker) — must succeed or the whole run fails ---
+            # If this fails after Linear succeeds, abort immediately to prevent
+            # duplicate Linear issues on the next run (no dedup marker = retry = dupe).
+            if ! gh issue create \
               --repo "${{ github.repository }}" \
               --title "⬆️ Upstream: ${PR_TITLE}" \
               --label "upstream-sync" \
-              --body-file /tmp/gh-issue-body.md
-
+              --body-file /tmp/gh-issue-body.md; then
+              echo "❌ GitHub issue creation failed for cyrus#${PR_NUM} after Linear ${LINEAR_ID} was created"
+              echo "   ⚠️  Manual cleanup needed: Linear issue ${LINEAR_ID} may be duplicated on next run"
+              exit 1
+            fi
             CREATED=$((CREATED + 1))
           done < <(jq -c '.[]' /tmp/upstream-prs.json)
 
