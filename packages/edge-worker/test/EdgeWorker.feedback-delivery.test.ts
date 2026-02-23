@@ -106,7 +106,8 @@ describe("EdgeWorker - Feedback Delivery", () => {
 		mockAgentSessionManager = {
 			hasAgentRunner: vi.fn().mockReturnValue(false),
 			getSession: vi.fn().mockReturnValue(null),
-			on: vi.fn(), // EventEmitter method
+			handleClaudeMessage: vi.fn().mockResolvedValue(undefined),
+			on: vi.fn(),
 		};
 
 		// Mock AgentSessionManager constructor

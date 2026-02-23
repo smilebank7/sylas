@@ -163,6 +163,7 @@ describe("EdgeWorker - Screenshot Upload Guidance Hooks", () => {
 			restoreState: vi.fn(),
 			postAnalyzingThought: vi.fn().mockResolvedValue(null),
 			postProcedureSelectionThought: vi.fn().mockResolvedValue(undefined),
+			handleClaudeMessage: vi.fn().mockResolvedValue(undefined),
 			on: vi.fn(),
 		};
 		vi.mocked(AgentSessionManager).mockImplementation(
