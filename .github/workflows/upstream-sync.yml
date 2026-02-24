@@ -57,7 +57,7 @@ jobs:
             if ! EXISTING=$(gh issue list \
               --repo "${{ github.repository }}" \
               --label "upstream-sync" \
-              --search "cyrus#${PR_NUM}" \
+              --search "upstream-sync:cyrus#${PR_NUM}" \
               --json number --jq length); then
               echo "❌ GitHub API error during dedup check for cyrus#${PR_NUM} — aborting"
               exit 1
