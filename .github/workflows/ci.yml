@@ -41,19 +41,26 @@ jobs:
     - name: Run Biome
       run: bun run biome ci
 
-    - name: Type Check
-      run: bun run typecheck
-
     - name: Build Packages
       run: bun run build
+
+    - name: Type Check
+      run: bun run typecheck
 
     - name: Run Tests
       run: |
         failed=0
         for f in $(find packages apps -name '*.test.ts' -not -path '*/node_modules/*' | sort); do
-          if ! bun test "./$f" > /dev/null 2>&1; then
+          # Resolve the package directory (containing package.json) for this test file
+          pkg_dir="$f"
+          while [ "$pkg_dir" != "." ] && [ ! -f "$pkg_dir/package.json" ]; do
+            pkg_dir=$(dirname "$pkg_dir")
+          done
+          # Run test from its package directory so bunfig.toml is picked up
+          rel_path=$(echo "$f" | sed "s|^$pkg_dir/||")
+          if ! (cd "$pkg_dir" && bun test "./$rel_path") > /dev/null 2>&1; then
             echo "FAIL: $f"
-            bun test "./$f" 2>&1 | tail -20
+            (cd "$pkg_dir" && bun test "./$rel_path") 2>&1 | tail -20
             failed=1
           fi
         done
