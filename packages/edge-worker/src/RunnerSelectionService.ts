@@ -1,14 +1,14 @@
-import {
-	getAllTools,
-	getCoordinatorTools,
-	getReadOnlyTools,
-	getSafeTools,
-} from "sylas-claude-runner";
 import type {
 	EdgeWorkerConfig,
 	ILogger,
 	RepositoryConfig,
 	SylasAgentSession,
+} from "sylas-core";
+import {
+	getAllTools,
+	getCoordinatorTools,
+	getReadOnlyTools,
+	getSafeTools,
 } from "sylas-core";
 
 import type { ProcedureAnalyzer } from "./procedures/index.js";
@@ -26,12 +26,10 @@ export class RunnerSelectionService {
 	 * Resolve default model for a given runner from config with sensible built-in defaults.
 	 */
 	public getDefaultModelForRunner(
-		runnerType: "claude" | "gemini" | "codex" | "cursor" | "opencode",
+		runnerType: "omc" | "gemini" | "omx" | "cursor" | "omo",
 	): string {
-		if (runnerType === "claude") {
-			return (
-				this.config.claudeDefaultModel || this.config.defaultModel || "opus"
-			);
+		if (runnerType === "omc") {
+			return this.config.omcDefaultModel || this.config.defaultModel || "opus";
 		}
 		if (runnerType === "gemini") {
 			return this.config.geminiDefaultModel || "gemini-2.5-pro";
@@ -39,14 +37,14 @@ export class RunnerSelectionService {
 		if (runnerType === "cursor") {
 			return "gpt-5";
 		}
-		if (runnerType === "opencode") {
+		if (runnerType === "omo") {
 			return (
-				this.config.openCodeDefaultModel ||
+				this.config.omoDefaultModel ||
 				this.config.defaultModel ||
 				"anthropic/claude-sonnet-4-20250514"
 			);
 		}
-		return this.config.codexDefaultModel || "gpt-5.3-codex";
+		return this.config.omxDefaultModel || "gpt-5.3-codex";
 	}
 
 	/**
@@ -54,11 +52,11 @@ export class RunnerSelectionService {
 	 * Supports legacy Claude fallback key for backwards compatibility.
 	 */
 	public getDefaultFallbackModelForRunner(
-		runnerType: "claude" | "gemini" | "codex" | "cursor" | "opencode",
+		runnerType: "omc" | "gemini" | "omx" | "cursor" | "omo",
 	): string {
-		if (runnerType === "claude") {
+		if (runnerType === "omc") {
 			return (
-				this.config.claudeDefaultFallbackModel ||
+				this.config.omcDefaultFallbackModel ||
 				this.config.defaultFallbackModel ||
 				"sonnet"
 			);
@@ -69,9 +67,9 @@ export class RunnerSelectionService {
 		if (runnerType === "cursor") {
 			return "gpt-5";
 		}
-		if (runnerType === "opencode") {
+		if (runnerType === "omo") {
 			return (
-				this.config.openCodeDefaultModel ||
+				this.config.omoDefaultModel ||
 				this.config.defaultFallbackModel ||
 				"anthropic/claude-sonnet-4-20250514"
 			);
@@ -101,20 +99,20 @@ export class RunnerSelectionService {
 	 * Determine runner type and model using labels + issue description tags.
 	 *
 	 * Supported description tags:
-	 * - [agent=claude|gemini|codex|cursor|opencode]
+	 * - [agent=omc|claude|gemini|omx|codex|cursor|omo|opencode]
 	 * - [model=<model-name>]
 	 *
 	 * Precedence:
 	 * 1. Description tags override labels
 	 * 2. Agent labels override model labels
 	 * 3. Model labels can infer agent type
-	 * 4. Defaults to opencode runner
+	 * 4. Defaults to omo runner
 	 */
 	public determineRunnerSelection(
 		labels: string[],
 		issueDescription?: string,
 	): {
-		runnerType: "claude" | "gemini" | "codex" | "cursor" | "opencode";
+		runnerType: "omc" | "gemini" | "omx" | "cursor" | "omo";
 		modelOverride?: string;
 		fallbackModelOverride?: string;
 	} {
@@ -130,24 +128,24 @@ export class RunnerSelectionService {
 		);
 
 		const defaultModelByRunner: Record<
-			"claude" | "gemini" | "codex" | "cursor" | "opencode",
+			"omc" | "gemini" | "omx" | "cursor" | "omo",
 			string
 		> = {
-			claude: this.getDefaultModelForRunner("claude"),
+			omc: this.getDefaultModelForRunner("omc"),
 			gemini: this.getDefaultModelForRunner("gemini"),
-			codex: this.getDefaultModelForRunner("codex"),
+			omx: this.getDefaultModelForRunner("omx"),
 			cursor: this.getDefaultModelForRunner("cursor"),
-			opencode: this.getDefaultModelForRunner("opencode"),
+			omo: this.getDefaultModelForRunner("omo"),
 		};
 		const defaultFallbackByRunner: Record<
-			"claude" | "gemini" | "codex" | "cursor" | "opencode",
+			"omc" | "gemini" | "omx" | "cursor" | "omo",
 			string
 		> = {
-			claude: this.getDefaultFallbackModelForRunner("claude"),
+			omc: this.getDefaultFallbackModelForRunner("omc"),
 			gemini: this.getDefaultFallbackModelForRunner("gemini"),
-			codex: this.getDefaultFallbackModelForRunner("codex"),
+			omx: this.getDefaultFallbackModelForRunner("omx"),
 			cursor: this.getDefaultFallbackModelForRunner("cursor"),
-			opencode: this.getDefaultFallbackModelForRunner("opencode"),
+			omo: this.getDefaultFallbackModelForRunner("omo"),
 		};
 
 		const isCodexModel = (model: string): boolean =>
@@ -155,7 +153,7 @@ export class RunnerSelectionService {
 
 		const inferRunnerFromModel = (
 			model?: string,
-		): "claude" | "gemini" | "codex" | "cursor" | "opencode" | undefined => {
+		): "omc" | "gemini" | "omx" | "cursor" | "omo" | undefined => {
 			if (!model) return undefined;
 			const normalizedModel = model.toLowerCase();
 			if (normalizedModel.startsWith("gemini")) return "gemini";
@@ -165,18 +163,18 @@ export class RunnerSelectionService {
 				normalizedModel === "haiku" ||
 				normalizedModel.startsWith("claude")
 			) {
-				return "claude";
+				return "omc";
 			}
-			if (isCodexModel(normalizedModel)) return "codex";
+			if (isCodexModel(normalizedModel)) return "omx";
 			return undefined;
 		};
 
 		const inferFallbackModel = (
 			model: string,
-			runnerType: "claude" | "gemini" | "codex" | "cursor" | "opencode",
+			runnerType: "omc" | "gemini" | "omx" | "cursor" | "omo",
 		): string | undefined => {
 			const normalizedModel = model.toLowerCase();
-			if (runnerType === "claude") {
+			if (runnerType === "omc") {
 				if (normalizedModel === "opus") return "sonnet";
 				if (normalizedModel === "sonnet") return "haiku";
 				// Keep haiku fallback on sonnet for retry behavior
@@ -216,24 +214,32 @@ export class RunnerSelectionService {
 
 		const resolveAgentFromLabel = (
 			lowercaseLabels: string[],
-		): "claude" | "gemini" | "codex" | "cursor" | "opencode" | undefined => {
-			if (lowercaseLabels.includes("opencode")) {
-				return "opencode";
+		): "omc" | "gemini" | "omx" | "cursor" | "omo" | undefined => {
+			if (
+				lowercaseLabels.includes("opencode") ||
+				lowercaseLabels.includes("omo")
+			) {
+				return "omo";
 			}
 			if (lowercaseLabels.includes("cursor")) {
 				return "cursor";
 			}
 			if (
 				lowercaseLabels.includes("codex") ||
+				lowercaseLabels.includes("omx") ||
 				lowercaseLabels.includes("openai")
 			) {
-				return "codex";
+				return "omx";
 			}
 			if (lowercaseLabels.includes("gemini")) {
 				return "gemini";
 			}
-			if (lowercaseLabels.includes("claude")) {
-				return "claude";
+			if (
+				lowercaseLabels.includes("claude") ||
+				lowercaseLabels.includes("omc") ||
+				lowercaseLabels.includes("opus")
+			) {
+				return "omc";
 			}
 			return undefined;
 		};
@@ -277,17 +283,19 @@ export class RunnerSelectionService {
 
 		const agentFromDescription = descriptionAgentTagRaw?.toLowerCase();
 		const resolvedAgentFromDescription =
-			agentFromDescription === "opencode"
-				? "opencode"
+			agentFromDescription === "opencode" || agentFromDescription === "omo"
+				? "omo"
 				: agentFromDescription === "cursor"
 					? "cursor"
 					: agentFromDescription === "codex" ||
+							agentFromDescription === "omx" ||
 							agentFromDescription === "openai"
-						? "codex"
+						? "omx"
 						: agentFromDescription === "gemini"
 							? "gemini"
-							: agentFromDescription === "claude"
-								? "claude"
+							: agentFromDescription === "claude" ||
+									agentFromDescription === "omc"
+								? "omc"
 								: undefined;
 		const resolvedAgentFromLabels = resolveAgentFromLabel(normalizedLabels);
 
@@ -295,11 +303,11 @@ export class RunnerSelectionService {
 		const modelFromLabels = resolveModelFromLabel(normalizedLabels);
 		const explicitModel = modelFromDescription || modelFromLabels;
 
-		const runnerType: "claude" | "gemini" | "codex" | "cursor" | "opencode" =
+		const runnerType: "omc" | "gemini" | "omx" | "cursor" | "omo" =
 			resolvedAgentFromDescription ||
 			resolvedAgentFromLabels ||
 			inferRunnerFromModel(explicitModel) ||
-			"opencode";
+			"omo";
 
 		// If an explicit agent conflicts with model's implied runner, keep the agent and reset model.
 		const modelRunner = inferRunnerFromModel(explicitModel);

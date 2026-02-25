@@ -2,13 +2,19 @@ import type {
 	HookCallbackMatcher,
 	HookEvent,
 	McpServerConfig,
+	PostToolUseHookInput,
 	SDKMessage,
+	SDKStatusMessage,
+	SDKSystemMessage,
 	SDKUserMessage,
 } from "@anthropic-ai/claude-agent-sdk";
-
 // Import the AskUserQuestionInput type from the SDK's tool input types
 // This ensures we use the SDK's official type definitions
 import type { AskUserQuestionInput as SDKAskUserQuestionInput } from "@anthropic-ai/claude-agent-sdk/sdk-tools.d.ts";
+import type {
+	Message as APIAssistantMessage,
+	MessageParam as APIUserMessage,
+} from "@anthropic-ai/sdk/resources/messages.js";
 
 // ============================================================================
 // ASK USER QUESTION TYPES
@@ -117,7 +123,7 @@ export type OnAskUserQuestion = (
 /**
  * Message Formatter Interface
  *
- * Forward declaration - implemented by each runner (e.g., ClaudeMessageFormatter, GeminiMessageFormatter)
+ * Forward declaration - implemented by each runner (e.g., OmcMessageFormatter, GeminiMessageFormatter)
  *
  * Formatter output is UI-facing activity content, not model input. These strings
  * are consumed by the edge worker session pipeline (AgentSessionManager) and then
@@ -170,7 +176,7 @@ export interface IMessageFormatter {
  * ## Usage Example
  *
  * ```typescript
- * class ClaudeRunnerAdapter implements IAgentRunner {
+ * class OmcRunnerAdapter implements IAgentRunner {
  *   async start(prompt: string): Promise<AgentSessionInfo> {
  *     // Implementation using Claude SDK
  *   }
@@ -224,7 +230,7 @@ export interface IAgentRunner {
 	 *
 	 * @example
 	 * ```typescript
-	 * const runner = new ClaudeRunnerAdapter(config);
+	 * const runner = new OmcRunnerAdapter(config);
 	 * const session = await runner.start("Please analyze this codebase");
 	 * console.log(`Session started: ${session.sessionId}`);
 	 * ```
@@ -503,3 +509,11 @@ export type {
 	SDKResultMessage,
 	SDKUserMessage,
 } from "@anthropic-ai/claude-agent-sdk";
+
+export type {
+	APIAssistantMessage,
+	APIUserMessage,
+	PostToolUseHookInput,
+	SDKStatusMessage,
+	SDKSystemMessage,
+};

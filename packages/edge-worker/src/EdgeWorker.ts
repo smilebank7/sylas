@@ -4,19 +4,6 @@ import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import { basename, join } from "node:path";
 import { LinearClient } from "@linear/sdk";
 import { Sessions, streamableHttp } from "fastify-mcp";
-import type {
-	HookCallbackMatcher,
-	HookEvent,
-	McpServerConfig,
-	PostToolUseHookInput,
-	SDKMessage,
-} from "sylas-claude-runner";
-import {
-	ClaudeRunner,
-	createImageToolsServer,
-	createSoraToolsServer,
-} from "sylas-claude-runner";
-import { CodexRunner } from "sylas-codex-runner";
 import { ConfigUpdater } from "sylas-config-updater";
 import type {
 	AgentActivityCreateInput,
@@ -27,6 +14,8 @@ import type {
 	ContentUpdateMessage,
 	EdgeWorkerConfig,
 	GuidanceRule,
+	HookCallbackMatcher,
+	HookEvent,
 	IAgentRunner,
 	IIssueTrackerService,
 	ILogger,
@@ -35,7 +24,10 @@ import type {
 	IssueMinimal,
 	IssueUnassignedWebhook,
 	IssueUpdateWebhook,
+	McpServerConfig,
+	PostToolUseHookInput,
 	RepositoryConfig,
+	SDKMessage,
 	SerializableEdgeWorkerState,
 	SerializedSylasAgentSession,
 	SerializedSylasAgentSessionEntry,
@@ -69,8 +61,6 @@ import {
 	PersistenceManager,
 	resolvePath,
 } from "sylas-core";
-import { CursorRunner } from "sylas-cursor-runner";
-import { GeminiRunner } from "sylas-gemini-runner";
 import {
 	extractCommentAuthor,
 	extractCommentBody,
@@ -97,10 +87,11 @@ import {
 	type LinearOAuthConfig,
 } from "sylas-linear-event-transport";
 import {
+	createImageToolsServer,
+	createSoraToolsServer,
 	createSylasToolsServer,
 	type SylasToolsOptions,
 } from "sylas-mcp-tools";
-import { OpenCodeRunner } from "sylas-opencode-runner";
 import {
 	SlackEventTransport,
 	type SlackWebhookEvent,
@@ -131,6 +122,11 @@ import {
 	RepositoryRouter,
 	type RepositoryRouterDeps,
 } from "./RepositoryRouter.js";
+import {
+	createRunner,
+	type RunnerKind,
+	RunnerNotInstalledError,
+} from "./RunnerRegistry.js";
 import { RunnerSelectionService } from "./RunnerSelectionService.js";
 import { SharedApplicationServer } from "./SharedApplicationServer.js";
 import { SlackChatAdapter } from "./SlackChatAdapter.js";
@@ -225,7 +221,7 @@ export class EdgeWorker extends EventEmitter {
 		this.globalSessionRegistry = new GlobalSessionRegistry();
 
 		// Initialize procedure router with haiku for fast classification
-		// Default to claude runner
+		// Default to omc runner
 		this.procedureAnalyzer = new ProcedureAnalyzer({
 			sylasHome: this.sylasHome,
 			model: "gemini-2.5-flash-lite",
@@ -974,7 +970,11 @@ export class EdgeWorker extends EventEmitter {
 				false, // singleTurn
 			);
 
-			const runner = new ClaudeRunner(runnerConfig);
+			const runner = await createRunner(
+				"omc",
+				runnerConfig as any,
+				this.logger,
+			);
 
 			// Store the runner in the session manager
 			agentSessionManager.addAgentRunner(githubSessionId, runner);
@@ -1009,6 +1009,9 @@ export class EdgeWorker extends EventEmitter {
 				await this.savePersistedState();
 			}
 		} catch (error) {
+			if (error instanceof RunnerNotInstalledError) {
+				this.logger.error(error.message, error);
+			}
 			this.logger.error(
 				"Failed to process GitHub webhook",
 				error instanceof Error ? error : new Error(String(error)),
@@ -2733,7 +2736,7 @@ ${taskInstructions}
 			labels,
 			fullIssue.description || undefined,
 		);
-		if (earlyRunnerSelection.runnerType === "opencode") {
+		if (earlyRunnerSelection.runnerType === "omo") {
 			const fullDelegationProcedure =
 				this.procedureAnalyzer.getProcedure("full-delegation");
 			if (!fullDelegationProcedure) {
@@ -2915,16 +2918,11 @@ ${taskInstructions}
 				`Label-based runner selection for new session: ${runnerType} (session ${sessionId})`,
 			);
 
-			const runner =
-				runnerType === "opencode"
-					? new OpenCodeRunner(runnerConfig)
-					: runnerType === "claude"
-						? new ClaudeRunner(runnerConfig)
-						: runnerType === "gemini"
-							? new GeminiRunner(runnerConfig)
-							: runnerType === "codex"
-								? new CodexRunner(runnerConfig)
-								: new CursorRunner(runnerConfig);
+			const runner = await createRunner(
+				runnerType as RunnerKind,
+				runnerConfig as any,
+				this.logger,
+			);
 
 			// Store runner by comment ID
 			agentSessionManager.addAgentRunner(sessionId, runner);
@@ -2941,7 +2939,7 @@ ${taskInstructions}
 			);
 
 			// Update runner with version information (if available)
-			// Note: updatePromptVersions is specific to ClaudeRunner
+			// Note: updatePromptVersions is specific to OmcRunner
 			if (
 				systemPromptVersion &&
 				"updatePromptVersions" in runner &&
@@ -2970,6 +2968,9 @@ ${taskInstructions}
 			// Note: AgentSessionManager will be initialized automatically when the first system message
 			// is received via handleClaudeMessage() callback
 		} catch (error) {
+			if (error instanceof RunnerNotInstalledError) {
+				log.error(error.message, error);
+			}
 			log.error(`Error in prompt building/starting:`, error);
 			throw error;
 		}
@@ -3509,7 +3510,7 @@ ${taskInstructions}
 		if (isAbortError || isSigterm) {
 			return;
 		}
-		this.logger.error("Unhandled claude error:", error);
+		this.logger.error("Unhandled omc error:", error);
 	}
 
 	/**
@@ -3524,7 +3525,7 @@ ${taskInstructions}
 	 * Supports legacy config keys for backwards compatibility.
 	 */
 	private getDefaultModelForRunner(
-		runnerType: "claude" | "gemini" | "codex" | "cursor" | "opencode",
+		runnerType: "omc" | "gemini" | "omx" | "cursor" | "omo",
 	): string {
 		return this.runnerSelectionService.getDefaultModelForRunner(runnerType);
 	}
@@ -3534,7 +3535,7 @@ ${taskInstructions}
 	 * Supports legacy Claude fallback key for backwards compatibility.
 	 */
 	private getDefaultFallbackModelForRunner(
-		runnerType: "claude" | "gemini" | "codex" | "cursor" | "opencode",
+		runnerType: "omc" | "gemini" | "omx" | "cursor" | "omo",
 	): string {
 		return this.runnerSelectionService.getDefaultFallbackModelForRunner(
 			runnerType,
@@ -3545,7 +3546,7 @@ ${taskInstructions}
 	 * Determine runner type and model using labels + issue description tags.
 	 *
 	 * Supported description tags:
-	 * - [agent=claude|gemini|codex|cursor]
+	 * - [agent=omc|claude|gemini|omx|codex|cursor|omo|opencode]
 	 * - [model=<model-name>]
 	 *
 	 * Precedence:
@@ -3557,7 +3558,7 @@ ${taskInstructions}
 		labels: string[],
 		issueDescription?: string,
 	): {
-		runnerType: "claude" | "gemini" | "codex" | "cursor" | "opencode";
+		runnerType: "omc" | "gemini" | "omx" | "cursor" | "omo";
 		modelOverride?: string;
 		fallbackModelOverride?: string;
 	} {
@@ -4265,13 +4266,13 @@ ${taskInstructions}
 			mcpConfig["sora-tools"] = createSoraToolsServer({
 				apiKey: repository.openaiApiKey,
 				outputDirectory: repository.openaiOutputDirectory,
-			});
+			}) as unknown as McpServerConfig;
 
 			// GPT Image generation tools
 			mcpConfig["image-tools"] = createImageToolsServer({
 				apiKey: repository.openaiApiKey,
 				outputDirectory: repository.openaiOutputDirectory,
-			});
+			}) as unknown as McpServerConfig;
 
 			this.logger.debug(
 				`Configured OpenAI MCP servers (Sora + GPT Image) for repository: ${repository.name}`,
@@ -4662,7 +4663,7 @@ ${input.userComment}
 		disallowAllTools?: boolean,
 	): {
 		config: AgentRunnerConfig;
-		runnerType: "claude" | "gemini" | "codex" | "cursor" | "opencode";
+		runnerType: "omc" | "gemini" | "omx" | "cursor" | "omo";
 	} {
 		const log = this.logger.withContext({
 			sessionId,
@@ -4767,26 +4768,26 @@ ${input.userComment}
 		let fallbackModelOverride = runnerSelection.fallbackModelOverride;
 
 		// If the labels have changed, and we are resuming a session. Use the existing runner for the session.
-		if (session.claudeSessionId && runnerType !== "claude") {
-			runnerType = "claude";
-			modelOverride = this.getDefaultModelForRunner("claude");
-			fallbackModelOverride = this.getDefaultFallbackModelForRunner("claude");
+		if (session.claudeSessionId && runnerType !== "omc") {
+			runnerType = "omc";
+			modelOverride = this.getDefaultModelForRunner("omc");
+			fallbackModelOverride = this.getDefaultFallbackModelForRunner("omc");
 		} else if (session.geminiSessionId && runnerType !== "gemini") {
 			runnerType = "gemini";
 			modelOverride = this.getDefaultModelForRunner("gemini");
 			fallbackModelOverride = this.getDefaultFallbackModelForRunner("gemini");
-		} else if (session.codexSessionId && runnerType !== "codex") {
-			runnerType = "codex";
-			modelOverride = this.getDefaultModelForRunner("codex");
-			fallbackModelOverride = this.getDefaultFallbackModelForRunner("codex");
+		} else if (session.codexSessionId && runnerType !== "omx") {
+			runnerType = "omx";
+			modelOverride = this.getDefaultModelForRunner("omx");
+			fallbackModelOverride = this.getDefaultFallbackModelForRunner("omx");
 		} else if (session.cursorSessionId && runnerType !== "cursor") {
 			runnerType = "cursor";
 			modelOverride = this.getDefaultModelForRunner("cursor");
 			fallbackModelOverride = this.getDefaultFallbackModelForRunner("cursor");
-		} else if (session.openCodeSessionId && runnerType !== "opencode") {
-			runnerType = "opencode";
-			modelOverride = this.getDefaultModelForRunner("opencode");
-			fallbackModelOverride = this.getDefaultFallbackModelForRunner("opencode");
+		} else if (session.openCodeSessionId && runnerType !== "omo") {
+			runnerType = "omo";
+			modelOverride = this.getDefaultModelForRunner("omo");
+			fallbackModelOverride = this.getDefaultFallbackModelForRunner("omo");
 		}
 
 		// Log model override if found
@@ -4840,9 +4841,9 @@ ${input.userComment}
 			logger: log,
 			hooks,
 			// Enable Chrome integration for Claude runner (disabled for other runners)
-			...(runnerType === "claude" && { extraArgs: { chrome: null } }),
+			...(runnerType === "omc" && { extraArgs: { chrome: null } }),
 			// AskUserQuestion callback - only for Claude runner
-			...(runnerType === "claude" && {
+			...(runnerType === "omc" && {
 				onAskUserQuestion: this.createAskUserQuestionCallback(
 					sessionId,
 					repository.linearWorkspaceId,
@@ -4880,15 +4881,12 @@ ${input.userComment}
 		}
 
 		// OpenCode runner-specific wiring
-		if (runnerType === "opencode") {
+		if (runnerType === "omo") {
 			(config as any).autoApprove = true;
-			(config as any).opencodeAgent =
-				process.env.SYLAS_OPENCODE_AGENT || undefined;
-			(config as any).opencodeReportedModel =
+			(config as any).omoAgent = process.env.SYLAS_OPENCODE_AGENT || undefined;
+			(config as any).omoReportedModel =
 				process.env.SYLAS_OPENCODE_REPORTED_MODEL || undefined;
-			(config as any).opencodePlugins = (
-				process.env.SYLAS_OPENCODE_PLUGINS || ""
-			)
+			(config as any).omoPlugins = (process.env.SYLAS_OPENCODE_PLUGINS || "")
 				.split(",")
 				.map((value) => value.trim())
 				.filter(Boolean);
@@ -4909,7 +4907,7 @@ ${input.userComment}
 	}
 
 	/**
-	 * Create an onAskUserQuestion callback for the ClaudeRunner.
+	 * Create an onAskUserQuestion callback for the OmcRunner.
 	 * This callback delegates to the AskUserQuestionHandler which posts
 	 * elicitations to Linear and waits for user responses.
 	 *
@@ -5644,16 +5642,11 @@ ${input.userComment}
 		);
 
 		// Create the appropriate runner based on session state
-		const runner =
-			runnerType === "opencode"
-				? new OpenCodeRunner(runnerConfig)
-				: runnerType === "claude"
-					? new ClaudeRunner(runnerConfig)
-					: runnerType === "gemini"
-						? new GeminiRunner(runnerConfig)
-						: runnerType === "codex"
-							? new CodexRunner(runnerConfig)
-							: new CursorRunner(runnerConfig);
+		const runner = await createRunner(
+			runnerType as RunnerKind,
+			runnerConfig as any,
+			this.logger,
+		);
 
 		// Store runner
 		agentSessionManager.addAgentRunner(sessionId, runner);

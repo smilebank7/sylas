@@ -3,16 +3,15 @@
  *
  * Uses a SimpleAgentRunner (Claude or Gemini) to analyze requests and determine
  * which procedure (sequence of subroutines) should be executed.
+ * Runner packages are dynamically imported to keep them optional.
  */
-
 import {
 	createLogger,
 	type ILogger,
 	type ISimpleAgentRunner,
+	type ISimpleAgentRunnerConfig,
 	type SylasAgentSession,
 } from "sylas-core";
-import { SimpleGeminiRunner } from "sylas-gemini-runner";
-import { SimpleClaudeRunner } from "sylas-simple-agent-runner";
 import { getProcedureForClassification, PROCEDURES } from "./registry.js";
 import type {
 	ProcedureAnalysisDecision,
@@ -21,36 +20,69 @@ import type {
 	RequestClassification,
 	SubroutineDefinition,
 } from "./types.js";
-
-export type SimpleRunnerType = "claude" | "gemini" | "opencode";
-
+export type SimpleRunnerType = "omc" | "gemini" | "omo";
 export interface ProcedureAnalyzerConfig {
 	sylasHome: string;
 	model?: string;
 	timeoutMs?: number;
-	runnerType?: SimpleRunnerType; // Default: "gemini"
+	runnerType?: SimpleRunnerType;
 	logger?: ILogger;
 }
 
+/**
+ * Dynamically load a simple runner for classification.
+ * Returns null if the runner package is not installed.
+ */
+async function loadSimpleRunner(
+	runnerType: SimpleRunnerType,
+	runnerConfig: ISimpleAgentRunnerConfig<RequestClassification>,
+	logger: ILogger,
+): Promise<ISimpleAgentRunner<RequestClassification> | null> {
+	try {
+		if (runnerType === "omc") {
+			const mod = await import("sylas-simple-agent-runner");
+			return new mod.SimpleOmcRunner(runnerConfig);
+		}
+		const mod = await import("sylas-gemini-runner");
+		return new mod.SimpleGeminiRunner(runnerConfig);
+	} catch (error: any) {
+		const message = String(error?.message ?? error);
+		if (
+			error?.code === "MODULE_NOT_FOUND" ||
+			error?.code === "ERR_MODULE_NOT_FOUND" ||
+			/Cannot find (package|module)/.test(message)
+		) {
+			logger.warn(
+				`Simple runner "${runnerType}" not installed, classification will use heuristic fallback`,
+			);
+			return null;
+		}
+		throw error;
+	}
+}
 export class ProcedureAnalyzer {
-	private analysisRunner: ISimpleAgentRunner<RequestClassification>;
+	private analysisRunner: ISimpleAgentRunner<RequestClassification> | null =
+		null;
+	private runnerInitialized = false;
 	private procedures: Map<string, ProcedureDefinition> = new Map();
 	private logger: ILogger;
-
+	private config: ProcedureAnalyzerConfig;
 	constructor(config: ProcedureAnalyzerConfig) {
+		this.config = config;
 		this.logger =
 			config.logger ?? createLogger({ component: "ProcedureAnalyzer" });
+		this.loadPredefinedProcedures();
+	}
 
-		// Determine which runner to use
-		const runnerType = config.runnerType || "gemini";
+	private async ensureRunner(): Promise<void> {
+		if (this.runnerInitialized) return;
+		this.runnerInitialized = true;
 
-		// Use runner-specific default models if not provided
+		const runnerType = this.config.runnerType || "gemini";
 		const defaultModel =
-			runnerType === "claude" ? "haiku" : "gemini-2.5-flash-lite";
+			runnerType === "omc" ? "haiku" : "gemini-2.5-flash-lite";
 		const defaultFallbackModel =
-			runnerType === "claude" ? "sonnet" : "gemini-2.0-flash-exp";
-
-		// Create runner configuration
+			runnerType === "omc" ? "sonnet" : "gemini-2.0-flash-exp";
 		const runnerConfig = {
 			validResponses: [
 				"question",
@@ -63,22 +95,19 @@ export class ProcedureAnalyzer {
 				"user-testing",
 				"release",
 			] as const,
-			sylasHome: config.sylasHome,
-			model: config.model || defaultModel,
+			sylasHome: this.config.sylasHome,
+			model: this.config.model || defaultModel,
 			fallbackModel: defaultFallbackModel,
 			systemPrompt: this.buildAnalysisSystemPrompt(),
 			maxTurns: 1,
-			timeoutMs: config.timeoutMs || 10000,
+			timeoutMs: this.config.timeoutMs || 10000,
 		};
 
-		// Initialize the appropriate runner based on type
-		this.analysisRunner =
-			runnerType === "claude"
-				? new SimpleClaudeRunner(runnerConfig)
-				: new SimpleGeminiRunner(runnerConfig);
-
-		// Load all predefined procedures from registry
-		this.loadPredefinedProcedures();
+		this.analysisRunner = await loadSimpleRunner(
+			runnerType,
+			runnerConfig,
+			this.logger,
+		);
 	}
 
 	/**
@@ -150,8 +179,11 @@ IMPORTANT: Respond with ONLY the classification word, nothing else.`;
 	async determineRoutine(
 		requestText: string,
 	): Promise<ProcedureAnalysisDecision> {
+		await this.ensureRunner();
 		try {
-			// Classify the request using analysis runner
+			if (!this.analysisRunner) {
+				throw new Error("No classification runner available");
+			}
 			const result = await this.analysisRunner.query(
 				`Classify this Linear issue request:\n\n${requestText}`,
 			);

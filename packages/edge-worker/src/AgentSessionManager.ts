@@ -1,21 +1,19 @@
 import { EventEmitter } from "node:events";
-import type {
-	APIAssistantMessage,
-	APIUserMessage,
-	SDKAssistantMessage,
-	SDKMessage,
-	SDKResultMessage,
-	SDKStatusMessage,
-	SDKSystemMessage,
-	SDKUserMessage,
-} from "sylas-claude-runner";
 import {
 	AgentSessionStatus,
 	AgentSessionType,
+	type APIAssistantMessage,
+	type APIUserMessage,
 	createLogger,
 	type IAgentRunner,
 	type ILogger,
 	type IssueMinimal,
+	type SDKAssistantMessage,
+	type SDKMessage,
+	type SDKResultMessage,
+	type SDKStatusMessage,
+	type SDKSystemMessage,
+	type SDKUserMessage,
 	type SerializedSylasAgentSession,
 	type SerializedSylasAgentSessionEntry,
 	type SylasAgentSession,
@@ -245,22 +243,22 @@ export class AgentSessionManager extends EventEmitter {
 		// Determine which runner is being used
 		const runner = linearSession.agentRunner;
 		const runnerType =
-			runner?.constructor.name === "OpenCodeRunner"
-				? "opencode"
+			runner?.constructor.name === "OmoRunner"
+				? "omo"
 				: runner?.constructor.name === "GeminiRunner"
 					? "gemini"
-					: runner?.constructor.name === "CodexRunner"
-						? "codex"
+					: runner?.constructor.name === "OmxRunner"
+						? "omx"
 						: runner?.constructor.name === "CursorRunner"
 							? "cursor"
-							: "claude";
+							: "omc";
 
 		// Update the appropriate session ID based on runner type
-		if (runnerType === "opencode") {
+		if (runnerType === "omo") {
 			linearSession.openCodeSessionId = claudeSystemMessage.session_id;
 		} else if (runnerType === "gemini") {
 			linearSession.geminiSessionId = claudeSystemMessage.session_id;
-		} else if (runnerType === "codex") {
+		} else if (runnerType === "omx") {
 			linearSession.codexSessionId = claudeSystemMessage.session_id;
 		} else if (runnerType === "cursor") {
 			linearSession.cursorSessionId = claudeSystemMessage.session_id;
@@ -305,23 +303,23 @@ export class AgentSessionManager extends EventEmitter {
 		const session = this.sessions.get(sessionId);
 		const runner = session?.agentRunner;
 		const runnerType =
-			runner?.constructor.name === "OpenCodeRunner"
-				? "opencode"
+			runner?.constructor.name === "OmoRunner"
+				? "omo"
 				: runner?.constructor.name === "GeminiRunner"
 					? "gemini"
-					: runner?.constructor.name === "CodexRunner"
-						? "codex"
+					: runner?.constructor.name === "OmxRunner"
+						? "omx"
 						: runner?.constructor.name === "CursorRunner"
 							? "cursor"
-							: "claude";
+							: "omc";
 
 		const sessionEntry: SylasAgentSessionEntry = {
 			// Set the appropriate session ID based on runner type
-			...(runnerType === "opencode"
+			...(runnerType === "omo"
 				? { openCodeSessionId: sdkMessage.session_id }
 				: runnerType === "gemini"
 					? { geminiSessionId: sdkMessage.session_id }
-					: runnerType === "codex"
+					: runnerType === "omx"
 						? { codexSessionId: sdkMessage.session_id }
 						: runnerType === "cursor"
 							? { cursorSessionId: sdkMessage.session_id }
@@ -948,15 +946,15 @@ export class AgentSessionManager extends EventEmitter {
 		const session = this.sessions.get(sessionId);
 		const runner = session?.agentRunner;
 		const runnerType =
-			runner?.constructor.name === "OpenCodeRunner"
-				? "opencode"
+			runner?.constructor.name === "OmoRunner"
+				? "omo"
 				: runner?.constructor.name === "GeminiRunner"
 					? "gemini"
-					: runner?.constructor.name === "CodexRunner"
-						? "codex"
+					: runner?.constructor.name === "OmxRunner"
+						? "omx"
 						: runner?.constructor.name === "CursorRunner"
 							? "cursor"
-							: "claude";
+							: "omc";
 
 		// For error results, content may be in errors[] rather than result
 		const content =
@@ -971,11 +969,11 @@ export class AgentSessionManager extends EventEmitter {
 
 		const resultEntry: SylasAgentSessionEntry = {
 			// Set the appropriate session ID based on runner type
-			...(runnerType === "opencode"
+			...(runnerType === "omo"
 				? { openCodeSessionId: resultMessage.session_id }
 				: runnerType === "gemini"
 					? { geminiSessionId: resultMessage.session_id }
-					: runnerType === "codex"
+					: runnerType === "omx"
 						? { codexSessionId: resultMessage.session_id }
 						: runnerType === "cursor"
 							? { cursorSessionId: resultMessage.session_id }

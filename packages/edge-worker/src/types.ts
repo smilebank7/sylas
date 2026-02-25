@@ -1,5 +1,9 @@
-import type { SDKMessage } from "sylas-claude-runner";
-import type { Issue, SylasAgentSession, Workspace } from "sylas-core";
+import type {
+	Issue,
+	SDKMessage,
+	SylasAgentSession,
+	Workspace,
+} from "sylas-core";
 
 /**
  * Events emitted by EdgeWorker

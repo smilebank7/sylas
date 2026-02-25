@@ -1,10 +1,15 @@
 import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
-import type { McpServerConfig, SDKMessage } from "sylas-claude-runner";
-import { ClaudeRunner, getAllTools } from "sylas-claude-runner";
-import type { IAgentRunner, ILogger, SylasAgentSession } from "sylas-core";
-import { createLogger } from "sylas-core";
+import type {
+	IAgentRunner,
+	ILogger,
+	McpServerConfig,
+	SDKMessage,
+	SylasAgentSession,
+} from "sylas-core";
+import { createLogger, getAllTools } from "sylas-core";
 import { AgentSessionManager } from "./AgentSessionManager.js";
+import { createRunner } from "./RunnerRegistry.js";
 import { NoopActivitySink } from "./sinks/NoopActivitySink.js";
 
 /**
@@ -230,7 +235,7 @@ export class ChatSessionHandler<TEvent> {
 				sessionId,
 			);
 
-			const runner = new ClaudeRunner(runnerConfig);
+			const runner = await createRunner("omc", runnerConfig as any);
 
 			// Store the runner in the session manager
 			this.sessionManager.addAgentRunner(sessionId, runner);
@@ -311,7 +316,7 @@ export class ChatSessionHandler<TEvent> {
 			resumeSessionId,
 		);
 
-		const runner = new ClaudeRunner(runnerConfig);
+		const runner = await createRunner("omc", runnerConfig as any);
 		this.sessionManager.addAgentRunner(sessionId, runner);
 
 		try {
@@ -368,7 +373,7 @@ export class ChatSessionHandler<TEvent> {
 	}
 
 	/**
-	 * Build a ClaudeRunner config for a chat session.
+	 * Build a OmcRunner config for a chat session.
 	 * Used by both handleEvent (new session) and resumeSession to eliminate duplication.
 	 */
 	private buildRunnerConfig(
