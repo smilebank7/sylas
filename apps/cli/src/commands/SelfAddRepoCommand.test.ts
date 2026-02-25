@@ -73,7 +73,16 @@ describe("SelfAddRepoCommand", () => {
 	let command: SelfAddRepoCommand;
 
 	beforeEach(() => {
-		mock.restore();
+		// Clear all mock call history (NOT mock.restore() which destroys mock.module registrations)
+		mocks.mockExecSync.mockClear();
+		mocks.mockRandomUUID.mockClear();
+		mocks.mockExistsSync.mockClear();
+		mocks.mockReadFileSync.mockClear();
+		mocks.mockWriteFileSync.mockClear();
+		mocks.mockQuestion.mockClear();
+		mocks.mockClose.mockClear();
+		mockExit.mockClear();
+		mockConsoleLog.mockClear();
 		mockApp = createMockApp();
 		command = new SelfAddRepoCommand(mockApp as any);
 		mocks.mockRandomUUID.mockReturnValue("generated-uuid-123");

@@ -92,23 +92,25 @@ describe("SelfAuthCommand", () => {
 	let originalEnv: NodeJS.ProcessEnv;
 
 	beforeEach(() => {
-		mock.restore();
-		mockApp = createMockApp();
-		command = new SelfAuthCommand(mockApp as any);
-		originalEnv = { ...process.env };
-
-		// Reset Fastify mock instance
+		// Clear all mock call history (NOT mock.restore() which destroys mock.module registrations)
+		mocks.mockReadFileSync.mockClear();
+		mocks.mockWriteFileSync.mockClear();
+		mocks.mockOpen.mockClear();
+		mocks.mockFetch.mockClear();
 		mocks.mockFastifyInstance.get.mockReset();
 		mocks.mockFastifyInstance.listen.mockReset();
 		mocks.mockFastifyInstance.close.mockReset();
-
-		// Setup default Fastify mock
+		mocks.mockFastify.mockClear();
+		mockExit.mockClear();
+		mockConsoleLog.mockClear();
+		_mockConsoleError.mockClear();
+		mockApp = createMockApp();
+		command = new SelfAuthCommand(mockApp as any);
+		originalEnv = { ...process.env };
 		mocks.mockFastify.mockReturnValue(mocks.mockFastifyInstance);
 		mocks.mockFastifyInstance.listen.mockResolvedValue(undefined);
 		mocks.mockFastifyInstance.close.mockResolvedValue(undefined);
 		mocks.mockOpen.mockResolvedValue(undefined);
-
-		// Setup global fetch mock
 		global.fetch = mocks.mockFetch;
 	});
 
