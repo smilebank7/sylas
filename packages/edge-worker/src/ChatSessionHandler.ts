@@ -235,7 +235,7 @@ export class ChatSessionHandler<TEvent> {
 				sessionId,
 			);
 
-			const runner = await createRunner("omc", runnerConfig as any);
+			const runner = await createRunner("claude", runnerConfig as any);
 
 			// Store the runner in the session manager
 			this.sessionManager.addAgentRunner(sessionId, runner);
@@ -316,7 +316,7 @@ export class ChatSessionHandler<TEvent> {
 			resumeSessionId,
 		);
 
-		const runner = await createRunner("omc", runnerConfig as any);
+		const runner = await createRunner("claude", runnerConfig as any);
 		this.sessionManager.addAgentRunner(sessionId, runner);
 
 		try {
@@ -373,7 +373,7 @@ export class ChatSessionHandler<TEvent> {
 	}
 
 	/**
-	 * Build a OmcRunner config for a chat session.
+	 * Build a ClaudeRunner config for a chat session.
 	 * Used by both handleEvent (new session) and resumeSession to eliminate duplication.
 	 */
 	private buildRunnerConfig(

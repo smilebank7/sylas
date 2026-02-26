@@ -221,7 +221,7 @@ export class EdgeWorker extends EventEmitter {
 		this.globalSessionRegistry = new GlobalSessionRegistry();
 
 		// Initialize procedure router with haiku for fast classification
-		// Default to omc runner
+		// Default to claude runner
 		this.procedureAnalyzer = new ProcedureAnalyzer({
 			sylasHome: this.sylasHome,
 			model: "gemini-2.5-flash-lite",
@@ -971,7 +971,7 @@ export class EdgeWorker extends EventEmitter {
 			);
 
 			const runner = await createRunner(
-				"omc",
+				"claude",
 				runnerConfig as any,
 				this.logger,
 			);
@@ -2736,7 +2736,7 @@ ${taskInstructions}
 			labels,
 			fullIssue.description || undefined,
 		);
-		if (earlyRunnerSelection.runnerType === "omo") {
+		if (earlyRunnerSelection.runnerType === "opencode") {
 			const fullDelegationProcedure =
 				this.procedureAnalyzer.getProcedure("full-delegation");
 			if (!fullDelegationProcedure) {
@@ -2939,7 +2939,6 @@ ${taskInstructions}
 			);
 
 			// Update runner with version information (if available)
-			// Note: updatePromptVersions is specific to OmcRunner
 			if (
 				systemPromptVersion &&
 				"updatePromptVersions" in runner &&
@@ -3510,7 +3509,7 @@ ${taskInstructions}
 		if (isAbortError || isSigterm) {
 			return;
 		}
-		this.logger.error("Unhandled omc error:", error);
+		this.logger.error("Unhandled claude error:", error);
 	}
 
 	/**
@@ -3525,7 +3524,7 @@ ${taskInstructions}
 	 * Supports legacy config keys for backwards compatibility.
 	 */
 	private getDefaultModelForRunner(
-		runnerType: "omc" | "gemini" | "omx" | "cursor" | "omo",
+		runnerType: "claude" | "gemini" | "codex" | "cursor" | "opencode",
 	): string {
 		return this.runnerSelectionService.getDefaultModelForRunner(runnerType);
 	}
@@ -3535,7 +3534,7 @@ ${taskInstructions}
 	 * Supports legacy Claude fallback key for backwards compatibility.
 	 */
 	private getDefaultFallbackModelForRunner(
-		runnerType: "omc" | "gemini" | "omx" | "cursor" | "omo",
+		runnerType: "claude" | "gemini" | "codex" | "cursor" | "opencode",
 	): string {
 		return this.runnerSelectionService.getDefaultFallbackModelForRunner(
 			runnerType,
@@ -3546,7 +3545,7 @@ ${taskInstructions}
 	 * Determine runner type and model using labels + issue description tags.
 	 *
 	 * Supported description tags:
-	 * - [agent=omc|claude|gemini|omx|codex|cursor|omo|opencode]
+	 * - [agent=claude|gemini|codex|cursor|opencode]
 	 * - [model=<model-name>]
 	 *
 	 * Precedence:
@@ -3558,7 +3557,7 @@ ${taskInstructions}
 		labels: string[],
 		issueDescription?: string,
 	): {
-		runnerType: "omc" | "gemini" | "omx" | "cursor" | "omo";
+		runnerType: "claude" | "gemini" | "codex" | "cursor" | "opencode";
 		modelOverride?: string;
 		fallbackModelOverride?: string;
 	} {
@@ -4663,7 +4662,7 @@ ${input.userComment}
 		disallowAllTools?: boolean,
 	): {
 		config: AgentRunnerConfig;
-		runnerType: "omc" | "gemini" | "omx" | "cursor" | "omo";
+		runnerType: "claude" | "gemini" | "codex" | "cursor" | "opencode";
 	} {
 		const log = this.logger.withContext({
 			sessionId,
@@ -4768,26 +4767,26 @@ ${input.userComment}
 		let fallbackModelOverride = runnerSelection.fallbackModelOverride;
 
 		// If the labels have changed, and we are resuming a session. Use the existing runner for the session.
-		if (session.claudeSessionId && runnerType !== "omc") {
-			runnerType = "omc";
-			modelOverride = this.getDefaultModelForRunner("omc");
-			fallbackModelOverride = this.getDefaultFallbackModelForRunner("omc");
+		if (session.claudeSessionId && runnerType !== "claude") {
+			runnerType = "claude";
+			modelOverride = this.getDefaultModelForRunner("claude");
+			fallbackModelOverride = this.getDefaultFallbackModelForRunner("claude");
 		} else if (session.geminiSessionId && runnerType !== "gemini") {
 			runnerType = "gemini";
 			modelOverride = this.getDefaultModelForRunner("gemini");
 			fallbackModelOverride = this.getDefaultFallbackModelForRunner("gemini");
-		} else if (session.codexSessionId && runnerType !== "omx") {
-			runnerType = "omx";
-			modelOverride = this.getDefaultModelForRunner("omx");
-			fallbackModelOverride = this.getDefaultFallbackModelForRunner("omx");
+		} else if (session.codexSessionId && runnerType !== "codex") {
+			runnerType = "codex";
+			modelOverride = this.getDefaultModelForRunner("codex");
+			fallbackModelOverride = this.getDefaultFallbackModelForRunner("codex");
 		} else if (session.cursorSessionId && runnerType !== "cursor") {
 			runnerType = "cursor";
 			modelOverride = this.getDefaultModelForRunner("cursor");
 			fallbackModelOverride = this.getDefaultFallbackModelForRunner("cursor");
-		} else if (session.openCodeSessionId && runnerType !== "omo") {
-			runnerType = "omo";
-			modelOverride = this.getDefaultModelForRunner("omo");
-			fallbackModelOverride = this.getDefaultFallbackModelForRunner("omo");
+		} else if (session.openCodeSessionId && runnerType !== "opencode") {
+			runnerType = "opencode";
+			modelOverride = this.getDefaultModelForRunner("opencode");
+			fallbackModelOverride = this.getDefaultFallbackModelForRunner("opencode");
 		}
 
 		// Log model override if found
@@ -4841,9 +4840,9 @@ ${input.userComment}
 			logger: log,
 			hooks,
 			// Enable Chrome integration for Claude runner (disabled for other runners)
-			...(runnerType === "omc" && { extraArgs: { chrome: null } }),
+			...(runnerType === "claude" && { extraArgs: { chrome: null } }),
 			// AskUserQuestion callback - only for Claude runner
-			...(runnerType === "omc" && {
+			...(runnerType === "claude" && {
 				onAskUserQuestion: this.createAskUserQuestionCallback(
 					sessionId,
 					repository.linearWorkspaceId,
@@ -4881,12 +4880,15 @@ ${input.userComment}
 		}
 
 		// OpenCode runner-specific wiring
-		if (runnerType === "omo") {
+		if (runnerType === "opencode") {
 			(config as any).autoApprove = true;
-			(config as any).omoAgent = process.env.SYLAS_OPENCODE_AGENT || undefined;
-			(config as any).omoReportedModel =
+			(config as any).opencodeAgent =
+				process.env.SYLAS_OPENCODE_AGENT || undefined;
+			(config as any).opencodeReportedModel =
 				process.env.SYLAS_OPENCODE_REPORTED_MODEL || undefined;
-			(config as any).omoPlugins = (process.env.SYLAS_OPENCODE_PLUGINS || "")
+			(config as any).opencodePlugins = (
+				process.env.SYLAS_OPENCODE_PLUGINS || ""
+			)
 				.split(",")
 				.map((value) => value.trim())
 				.filter(Boolean);
@@ -4907,7 +4909,7 @@ ${input.userComment}
 	}
 
 	/**
-	 * Create an onAskUserQuestion callback for the OmcRunner.
+	 * Create an onAskUserQuestion callback for the ClaudeRunner.
 	 * This callback delegates to the AskUserQuestionHandler which posts
 	 * elicitations to Linear and waits for user responses.
 	 *

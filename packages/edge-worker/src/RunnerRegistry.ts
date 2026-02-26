@@ -4,12 +4,12 @@ import { createLogger } from "sylas-core";
 /**
  * Known runner types and their corresponding npm package names.
  */
-export type RunnerKind = "omo" | "omc" | "omx" | "gemini" | "cursor";
+export type RunnerKind = "opencode" | "claude" | "codex" | "gemini" | "cursor";
 
 const RUNNER_PACKAGES: Record<RunnerKind, string> = {
-	omo: "sylas-omo-runner",
-	omc: "sylas-omc-runner",
-	omx: "sylas-omx-runner",
+	opencode: "sylas-opencode-runner",
+	claude: "sylas-claude-runner",
+	codex: "sylas-codex-runner",
 	gemini: "sylas-gemini-runner",
 	cursor: "sylas-cursor-runner",
 };
@@ -19,9 +19,9 @@ const RUNNER_PACKAGES: Record<RunnerKind, string> = {
  * Each runner package exports its runner class as a named export.
  */
 const RUNNER_EXPORT_NAMES: Record<RunnerKind, string> = {
-	omo: "OmoRunner",
-	omc: "OmcRunner",
-	omx: "OmxRunner",
+	opencode: "OpenCodeRunner",
+	claude: "ClaudeRunner",
+	codex: "CodexRunner",
 	gemini: "GeminiRunner",
 	cursor: "CursorRunner",
 };
@@ -63,14 +63,14 @@ export async function createRunner(
 		// Use literal string imports for each runner so bundlers can resolve them.
 		// Each case uses a direct string literal (not a variable) for compatibility.
 		switch (kind) {
-			case "omo":
-				mod = await import("sylas-omo-runner");
+			case "opencode":
+				mod = await import("sylas-opencode-runner");
 				break;
-			case "omc":
-				mod = await import("sylas-omc-runner");
+			case "claude":
+				mod = await import("sylas-claude-runner");
 				break;
-			case "omx":
-				mod = await import("sylas-omx-runner");
+			case "codex":
+				mod = await import("sylas-codex-runner");
 				break;
 			case "gemini":
 				mod = await import("sylas-gemini-runner");

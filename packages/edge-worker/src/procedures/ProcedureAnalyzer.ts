@@ -20,7 +20,7 @@ import type {
 	RequestClassification,
 	SubroutineDefinition,
 } from "./types.js";
-export type SimpleRunnerType = "omc" | "gemini" | "omo";
+export type SimpleRunnerType = "claude" | "gemini" | "opencode";
 export interface ProcedureAnalyzerConfig {
 	sylasHome: string;
 	model?: string;
@@ -39,9 +39,19 @@ async function loadSimpleRunner(
 	logger: ILogger,
 ): Promise<ISimpleAgentRunner<RequestClassification> | null> {
 	try {
-		if (runnerType === "omc") {
+		if (runnerType === "claude") {
 			const mod = await import("sylas-simple-agent-runner");
-			return new mod.SimpleOmcRunner(runnerConfig);
+			const RunnerClass = (
+				mod as unknown as Record<string, new (...args: any[]) => any>
+			).SimpleClaudeRunner;
+			if (!RunnerClass) {
+				throw new Error(
+					`Runner package "sylas-simple-agent-runner" does not export "SimpleClaudeRunner"`,
+				);
+			}
+			return new RunnerClass(
+				runnerConfig,
+			) as ISimpleAgentRunner<RequestClassification>;
 		}
 		const mod = await import("sylas-gemini-runner");
 		return new mod.SimpleGeminiRunner(runnerConfig);
@@ -80,9 +90,9 @@ export class ProcedureAnalyzer {
 
 		const runnerType = this.config.runnerType || "gemini";
 		const defaultModel =
-			runnerType === "omc" ? "haiku" : "gemini-2.5-flash-lite";
+			runnerType === "claude" ? "haiku" : "gemini-2.5-flash-lite";
 		const defaultFallbackModel =
-			runnerType === "omc" ? "sonnet" : "gemini-2.0-flash-exp";
+			runnerType === "claude" ? "sonnet" : "gemini-2.0-flash-exp";
 		const runnerConfig = {
 			validResponses: [
 				"question",
