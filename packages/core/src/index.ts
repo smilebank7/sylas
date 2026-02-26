@@ -13,6 +13,8 @@ export type {
 	AgentRunnerConfig,
 	AgentSessionInfo,
 	AgentUserMessage,
+	APIAssistantMessage,
+	APIUserMessage,
 	AskUserQuestion,
 	AskUserQuestionAnswers,
 	AskUserQuestionInput,
@@ -24,10 +26,13 @@ export type {
 	IMessageFormatter,
 	McpServerConfig,
 	OnAskUserQuestion,
+	PostToolUseHookInput,
 	SDKAssistantMessage,
 	SDKAssistantMessageError,
 	SDKMessage,
 	SDKResultMessage,
+	SDKStatusMessage,
+	SDKSystemMessage,
 	SDKUserMessage,
 } from "./agent-runner-types.js";
 // Configuration types
@@ -188,7 +193,6 @@ export type {
 	SylasAgentSessionEntry,
 	Workspace,
 } from "./SylasAgentSession.js";
-
 // Simple Agent Runner types
 export type {
 	IAgentProgressEvent,
@@ -197,6 +201,16 @@ export type {
 	ISimpleAgentRunner,
 	ISimpleAgentRunnerConfig,
 } from "./simple-agent-runner-types.js";
+export {
+	availableTools,
+	getAllTools,
+	getCoordinatorTools,
+	getReadOnlyTools,
+	getSafeTools,
+	readOnlyTools,
+	type ToolName,
+	writeTools,
+} from "./tool-policy.js";
 // Platform-agnostic webhook type aliases - exported from issue-tracker
 // These are now defined in issue-tracker/types.ts as aliases to Linear SDK webhook types
 // EdgeWorker and other high-level code should use these generic names via issue-tracker exports

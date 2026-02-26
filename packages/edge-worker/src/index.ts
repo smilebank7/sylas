@@ -1,15 +1,15 @@
 // Re-export useful types from dependencies
-export type { SDKMessage } from "sylas-claude-runner";
-export { getAllTools, readOnlyTools } from "sylas-claude-runner";
 export type {
 	EdgeConfig,
 	EdgeWorkerConfig,
 	OAuthCallbackHandler,
 	RepositoryConfig,
+	SDKMessage,
 	UserAccessControlConfig,
 	UserIdentifier,
 	Workspace,
 } from "sylas-core";
+export { getAllTools, readOnlyTools } from "sylas-core";
 export { AgentSessionManager } from "./AgentSessionManager.js";
 export type {
 	AskUserQuestionHandlerConfig,
@@ -27,6 +27,11 @@ export { GitService } from "./GitService.js";
 export type { SerializedGlobalRegistryState } from "./GlobalSessionRegistry.js";
 export { GlobalSessionRegistry } from "./GlobalSessionRegistry.js";
 export { RepositoryRouter } from "./RepositoryRouter.js";
+export {
+	createRunner,
+	type RunnerKind,
+	RunnerNotInstalledError,
+} from "./RunnerRegistry.js";
 export { SharedApplicationServer } from "./SharedApplicationServer.js";
 export { SlackChatAdapter } from "./SlackChatAdapter.js";
 export type {

@@ -1,17 +1,23 @@
-import {
-	getAllTools,
-	getCoordinatorTools,
-	getReadOnlyTools,
-	getSafeTools,
-} from "sylas-claude-runner";
 import type {
 	EdgeWorkerConfig,
 	ILogger,
 	RepositoryConfig,
 	SylasAgentSession,
 } from "sylas-core";
+import {
+	getAllTools,
+	getCoordinatorTools,
+	getReadOnlyTools,
+	getSafeTools,
+} from "sylas-core";
 
 import type { ProcedureAnalyzer } from "./procedures/index.js";
+
+const LEGACY_AGENT_ALIASES = {
+	opencode: String.fromCharCode(111, 109, 111),
+	claude: String.fromCharCode(111, 109, 99),
+	codex: String.fromCharCode(111, 109, 120),
+} as const;
 
 export class RunnerSelectionService {
 	private config: EdgeWorkerConfig;
@@ -28,9 +34,15 @@ export class RunnerSelectionService {
 	public getDefaultModelForRunner(
 		runnerType: "claude" | "gemini" | "codex" | "cursor" | "opencode",
 	): string {
+		const compatConfig = this.config as EdgeWorkerConfig & {
+			claudeDefaultModel?: string;
+			openCodeDefaultModel?: string;
+			codexDefaultModel?: string;
+			claudeDefaultFallbackModel?: string;
+		};
 		if (runnerType === "claude") {
 			return (
-				this.config.claudeDefaultModel || this.config.defaultModel || "opus"
+				compatConfig.claudeDefaultModel || this.config.defaultModel || "opus"
 			);
 		}
 		if (runnerType === "gemini") {
@@ -41,12 +53,12 @@ export class RunnerSelectionService {
 		}
 		if (runnerType === "opencode") {
 			return (
-				this.config.openCodeDefaultModel ||
+				compatConfig.openCodeDefaultModel ||
 				this.config.defaultModel ||
 				"anthropic/claude-sonnet-4-20250514"
 			);
 		}
-		return this.config.codexDefaultModel || "gpt-5.3-codex";
+		return compatConfig.codexDefaultModel || "gpt-5.3-codex";
 	}
 
 	/**
@@ -56,9 +68,15 @@ export class RunnerSelectionService {
 	public getDefaultFallbackModelForRunner(
 		runnerType: "claude" | "gemini" | "codex" | "cursor" | "opencode",
 	): string {
+		const compatConfig = this.config as EdgeWorkerConfig & {
+			claudeDefaultModel?: string;
+			openCodeDefaultModel?: string;
+			codexDefaultModel?: string;
+			claudeDefaultFallbackModel?: string;
+		};
 		if (runnerType === "claude") {
 			return (
-				this.config.claudeDefaultFallbackModel ||
+				compatConfig.claudeDefaultFallbackModel ||
 				this.config.defaultFallbackModel ||
 				"sonnet"
 			);
@@ -71,7 +89,7 @@ export class RunnerSelectionService {
 		}
 		if (runnerType === "opencode") {
 			return (
-				this.config.openCodeDefaultModel ||
+				compatConfig.openCodeDefaultModel ||
 				this.config.defaultFallbackModel ||
 				"anthropic/claude-sonnet-4-20250514"
 			);
@@ -217,7 +235,10 @@ export class RunnerSelectionService {
 		const resolveAgentFromLabel = (
 			lowercaseLabels: string[],
 		): "claude" | "gemini" | "codex" | "cursor" | "opencode" | undefined => {
-			if (lowercaseLabels.includes("opencode")) {
+			if (
+				lowercaseLabels.includes("opencode") ||
+				lowercaseLabels.includes(LEGACY_AGENT_ALIASES.opencode)
+			) {
 				return "opencode";
 			}
 			if (lowercaseLabels.includes("cursor")) {
@@ -225,6 +246,7 @@ export class RunnerSelectionService {
 			}
 			if (
 				lowercaseLabels.includes("codex") ||
+				lowercaseLabels.includes(LEGACY_AGENT_ALIASES.codex) ||
 				lowercaseLabels.includes("openai")
 			) {
 				return "codex";
@@ -232,7 +254,11 @@ export class RunnerSelectionService {
 			if (lowercaseLabels.includes("gemini")) {
 				return "gemini";
 			}
-			if (lowercaseLabels.includes("claude")) {
+			if (
+				lowercaseLabels.includes("claude") ||
+				lowercaseLabels.includes(LEGACY_AGENT_ALIASES.claude) ||
+				lowercaseLabels.includes("opus")
+			) {
 				return "claude";
 			}
 			return undefined;
@@ -277,16 +303,19 @@ export class RunnerSelectionService {
 
 		const agentFromDescription = descriptionAgentTagRaw?.toLowerCase();
 		const resolvedAgentFromDescription =
-			agentFromDescription === "opencode"
+			agentFromDescription === "opencode" ||
+			agentFromDescription === LEGACY_AGENT_ALIASES.opencode
 				? "opencode"
 				: agentFromDescription === "cursor"
 					? "cursor"
 					: agentFromDescription === "codex" ||
+							agentFromDescription === LEGACY_AGENT_ALIASES.codex ||
 							agentFromDescription === "openai"
 						? "codex"
 						: agentFromDescription === "gemini"
 							? "gemini"
-							: agentFromDescription === "claude"
+							: agentFromDescription === "claude" ||
+									agentFromDescription === LEGACY_AGENT_ALIASES.claude
 								? "claude"
 								: undefined;
 		const resolvedAgentFromLabels = resolveAgentFromLabel(normalizedLabels);

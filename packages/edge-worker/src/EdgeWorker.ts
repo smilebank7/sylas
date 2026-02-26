@@ -4,19 +4,6 @@ import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import { basename, join } from "node:path";
 import { LinearClient } from "@linear/sdk";
 import { Sessions, streamableHttp } from "fastify-mcp";
-import type {
-	HookCallbackMatcher,
-	HookEvent,
-	McpServerConfig,
-	PostToolUseHookInput,
-	SDKMessage,
-} from "sylas-claude-runner";
-import {
-	ClaudeRunner,
-	createImageToolsServer,
-	createSoraToolsServer,
-} from "sylas-claude-runner";
-import { CodexRunner } from "sylas-codex-runner";
 import { ConfigUpdater } from "sylas-config-updater";
 import type {
 	AgentActivityCreateInput,
@@ -27,6 +14,8 @@ import type {
 	ContentUpdateMessage,
 	EdgeWorkerConfig,
 	GuidanceRule,
+	HookCallbackMatcher,
+	HookEvent,
 	IAgentRunner,
 	IIssueTrackerService,
 	ILogger,
@@ -35,7 +24,10 @@ import type {
 	IssueMinimal,
 	IssueUnassignedWebhook,
 	IssueUpdateWebhook,
+	McpServerConfig,
+	PostToolUseHookInput,
 	RepositoryConfig,
+	SDKMessage,
 	SerializableEdgeWorkerState,
 	SerializedSylasAgentSession,
 	SerializedSylasAgentSessionEntry,
@@ -69,8 +61,6 @@ import {
 	PersistenceManager,
 	resolvePath,
 } from "sylas-core";
-import { CursorRunner } from "sylas-cursor-runner";
-import { GeminiRunner } from "sylas-gemini-runner";
 import {
 	extractCommentAuthor,
 	extractCommentBody,
@@ -97,10 +87,11 @@ import {
 	type LinearOAuthConfig,
 } from "sylas-linear-event-transport";
 import {
+	createImageToolsServer,
+	createSoraToolsServer,
 	createSylasToolsServer,
 	type SylasToolsOptions,
 } from "sylas-mcp-tools";
-import { OpenCodeRunner } from "sylas-opencode-runner";
 import {
 	SlackEventTransport,
 	type SlackWebhookEvent,
@@ -131,6 +122,11 @@ import {
 	RepositoryRouter,
 	type RepositoryRouterDeps,
 } from "./RepositoryRouter.js";
+import {
+	createRunner,
+	type RunnerKind,
+	RunnerNotInstalledError,
+} from "./RunnerRegistry.js";
 import { RunnerSelectionService } from "./RunnerSelectionService.js";
 import { SharedApplicationServer } from "./SharedApplicationServer.js";
 import { SlackChatAdapter } from "./SlackChatAdapter.js";
@@ -974,7 +970,11 @@ export class EdgeWorker extends EventEmitter {
 				false, // singleTurn
 			);
 
-			const runner = new ClaudeRunner(runnerConfig);
+			const runner = await createRunner(
+				"claude",
+				runnerConfig as any,
+				this.logger,
+			);
 
 			// Store the runner in the session manager
 			agentSessionManager.addAgentRunner(githubSessionId, runner);
@@ -1009,6 +1009,9 @@ export class EdgeWorker extends EventEmitter {
 				await this.savePersistedState();
 			}
 		} catch (error) {
+			if (error instanceof RunnerNotInstalledError) {
+				this.logger.error(error.message, error);
+			}
 			this.logger.error(
 				"Failed to process GitHub webhook",
 				error instanceof Error ? error : new Error(String(error)),
@@ -2915,16 +2918,11 @@ ${taskInstructions}
 				`Label-based runner selection for new session: ${runnerType} (session ${sessionId})`,
 			);
 
-			const runner =
-				runnerType === "opencode"
-					? new OpenCodeRunner(runnerConfig)
-					: runnerType === "claude"
-						? new ClaudeRunner(runnerConfig)
-						: runnerType === "gemini"
-							? new GeminiRunner(runnerConfig)
-							: runnerType === "codex"
-								? new CodexRunner(runnerConfig)
-								: new CursorRunner(runnerConfig);
+			const runner = await createRunner(
+				runnerType as RunnerKind,
+				runnerConfig as any,
+				this.logger,
+			);
 
 			// Store runner by comment ID
 			agentSessionManager.addAgentRunner(sessionId, runner);
@@ -2941,7 +2939,6 @@ ${taskInstructions}
 			);
 
 			// Update runner with version information (if available)
-			// Note: updatePromptVersions is specific to ClaudeRunner
 			if (
 				systemPromptVersion &&
 				"updatePromptVersions" in runner &&
@@ -2970,6 +2967,9 @@ ${taskInstructions}
 			// Note: AgentSessionManager will be initialized automatically when the first system message
 			// is received via handleClaudeMessage() callback
 		} catch (error) {
+			if (error instanceof RunnerNotInstalledError) {
+				log.error(error.message, error);
+			}
 			log.error(`Error in prompt building/starting:`, error);
 			throw error;
 		}
@@ -3545,7 +3545,7 @@ ${taskInstructions}
 	 * Determine runner type and model using labels + issue description tags.
 	 *
 	 * Supported description tags:
-	 * - [agent=claude|gemini|codex|cursor]
+	 * - [agent=claude|gemini|codex|cursor|opencode]
 	 * - [model=<model-name>]
 	 *
 	 * Precedence:
@@ -4265,13 +4265,13 @@ ${taskInstructions}
 			mcpConfig["sora-tools"] = createSoraToolsServer({
 				apiKey: repository.openaiApiKey,
 				outputDirectory: repository.openaiOutputDirectory,
-			});
+			}) as unknown as McpServerConfig;
 
 			// GPT Image generation tools
 			mcpConfig["image-tools"] = createImageToolsServer({
 				apiKey: repository.openaiApiKey,
 				outputDirectory: repository.openaiOutputDirectory,
-			});
+			}) as unknown as McpServerConfig;
 
 			this.logger.debug(
 				`Configured OpenAI MCP servers (Sora + GPT Image) for repository: ${repository.name}`,
@@ -5644,16 +5644,11 @@ ${input.userComment}
 		);
 
 		// Create the appropriate runner based on session state
-		const runner =
-			runnerType === "opencode"
-				? new OpenCodeRunner(runnerConfig)
-				: runnerType === "claude"
-					? new ClaudeRunner(runnerConfig)
-					: runnerType === "gemini"
-						? new GeminiRunner(runnerConfig)
-						: runnerType === "codex"
-							? new CodexRunner(runnerConfig)
-							: new CursorRunner(runnerConfig);
+		const runner = await createRunner(
+			runnerType as RunnerKind,
+			runnerConfig as any,
+			this.logger,
+		);
 
 		// Store runner
 		agentSessionManager.addAgentRunner(sessionId, runner);

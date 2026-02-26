@@ -26,24 +26,46 @@
 		"@linear/sdk": "^64.0.0",
 		"@ngrok/ngrok": "^1.5.1",
 		"chokidar": "^4.0.3",
-		"sylas-claude-runner": "workspace:*",
 		"sylas-cloudflare-tunnel-client": "workspace:*",
-		"sylas-codex-runner": "workspace:*",
 		"sylas-config-updater": "workspace:*",
 		"sylas-core": "workspace:*",
-		"sylas-cursor-runner": "workspace:*",
-		"sylas-gemini-runner": "workspace:*",
-		"sylas-opencode-runner": "workspace:*",
 		"sylas-github-event-transport": "workspace:*",
 		"sylas-linear-event-transport": "workspace:*",
 		"sylas-mcp-tools": "workspace:*",
 		"sylas-slack-event-transport": "workspace:*",
-		"sylas-simple-agent-runner": "workspace:*",
 		"fastify": "^5.7.3",
 		"fastify-mcp": "^2.1.0",
 		"file-type": "^18.7.0",
 		"ignore": "^7.0.5",
 		"zod": "4.3.5"
+	},
+	"peerDependencies": {
+		"sylas-claude-runner": "workspace:*",
+		"sylas-codex-runner": "workspace:*",
+		"sylas-opencode-runner": "workspace:*",
+		"sylas-gemini-runner": "workspace:*",
+		"sylas-cursor-runner": "workspace:*",
+		"sylas-simple-agent-runner": "workspace:*"
+	},
+	"peerDependenciesMeta": {
+		"sylas-claude-runner": {
+			"optional": true
+		},
+		"sylas-codex-runner": {
+			"optional": true
+		},
+		"sylas-opencode-runner": {
+			"optional": true
+		},
+		"sylas-gemini-runner": {
+			"optional": true
+		},
+		"sylas-cursor-runner": {
+			"optional": true
+		},
+		"sylas-simple-agent-runner": {
+			"optional": true
+		}
 	},
 	"devDependencies": {
 		"@types/node": "^20.0.0",
