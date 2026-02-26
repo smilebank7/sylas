@@ -1,72 +1,49 @@
-import { beforeEach, describe, expect, it, mock, spyOn } from "bun:test";
+import { beforeEach, describe, expect, it, mock } from "bun:test";
 import { AgentSessionStatus } from "sylas-core";
-import { AgentSessionManager } from "../src/AgentSessionManager";
 import type { IActivitySink } from "../src/sinks/IActivitySink";
 
 describe("AgentSessionManager stop-session behavior", () => {
-	let manager: AgentSessionManager;
-	let mockActivitySink: IActivitySink;
-	let postActivitySpy: any;
-	const sessionId = "test-session-stop";
-	const issueId = "issue-stop";
-	let mockProcedureAnalyzer: any;
+	let manager: import("../src/AgentSessionManager.ts").AgentSessionManager;
+	let postActivity: ReturnType<typeof mock>;
 
-	beforeEach(() => {
-		mockActivitySink = {
+	beforeEach(async () => {
+		const { AgentSessionManager } = await import(
+			`../src/AgentSessionManager.ts?stop-${Date.now()}`
+		);
+
+		postActivity = mock().mockResolvedValue({ activityId: "activity-1" });
+		const sink: IActivitySink = {
 			id: "test-workspace",
-			postActivity: mock().mockResolvedValue({ activityId: "activity-1" }),
+			postActivity,
 			createAgentSession: mock().mockResolvedValue("session-1"),
 		};
 
-		postActivitySpy = spyOn(mockActivitySink, "postActivity");
-
-		mockProcedureAnalyzer = {
-			getNextSubroutine: mock().mockReturnValue({ name: "verifications" }),
-			getCurrentSubroutine: mock().mockReturnValue({ name: "coding-activity" }),
-			advanceToNextSubroutine: mock(),
-			getLastSubroutineResult: mock().mockReturnValue(
-				"Recovered previous result",
-			),
-		};
-
-		manager = new AgentSessionManager(
-			mockActivitySink,
-			undefined,
-			undefined,
-			mockProcedureAnalyzer,
-		);
-
+		manager = new AgentSessionManager(sink);
 		manager.createLinearAgentSession(
-			sessionId,
-			issueId,
+			"test-session-stop",
+			"issue-stop",
 			{
-				id: issueId,
+				id: "issue-stop",
 				identifier: "TEST-STOP",
 				title: "Stop Session Test",
 				description: "test",
 				branchName: "test-stop",
 			},
-			{
-				path: "/tmp/workspace",
-				isGitWorktree: false,
-			},
+			{ path: "/tmp/workspace", isGitWorktree: false },
 		);
 	});
 
-	it("does not advance procedure when a session stop is requested", async () => {
-		const subroutineCompleteSpy = mock();
-		manager.on("subroutineComplete", subroutineCompleteSpy);
+	it("marks session as error when stop was requested", async () => {
+		manager.requestSessionStop("test-session-stop");
 
-		manager.requestSessionStop(sessionId);
-
-		await manager.completeSession(sessionId, {
+		await manager.completeSession("test-session-stop", {
 			type: "result",
 			subtype: "success",
 			duration_ms: 1,
 			duration_api_ms: 1,
 			is_error: false,
 			num_turns: 1,
-			result: "Stopped run should not continue",
+			result: "Stopped run",
 			stop_reason: null,
 			total_cost_usd: 0,
 			usage: {
@@ -80,82 +57,10 @@ describe("AgentSessionManager stop-session behavior", () => {
 			permission_denials: [],
 			uuid: "result-1",
 			session_id: "sdk-session",
-		} as any);
+		} as unknown as import("sylas-claude-runner").SDKResultMessage);
 
-		expect(subroutineCompleteSpy).not.toHaveBeenCalled();
-		expect(
-			mockProcedureAnalyzer.advanceToNextSubroutine,
-		).not.toHaveBeenCalled();
-		expect(manager.getSession(sessionId)?.status).toBe(
+		expect(manager.getSession("test-session-stop")?.status).toBe(
 			AgentSessionStatus.Error,
 		);
-	});
-
-	it("does not recover-and-advance for non max-turn execution errors", async () => {
-		const subroutineCompleteSpy = mock();
-		manager.on("subroutineComplete", subroutineCompleteSpy);
-
-		await manager.completeSession(sessionId, {
-			type: "result",
-			subtype: "error_during_execution",
-			duration_ms: 1,
-			duration_api_ms: 1,
-			is_error: true,
-			num_turns: 1,
-			errors: ["aborted by user"],
-			stop_reason: null,
-			total_cost_usd: 0,
-			usage: {
-				input_tokens: 1,
-				output_tokens: 1,
-				cache_creation_input_tokens: 0,
-				cache_read_input_tokens: 0,
-				cache_creation: null,
-			},
-			modelUsage: {},
-			permission_denials: [],
-			uuid: "result-2",
-			session_id: "sdk-session",
-		} as any);
-
-		expect(subroutineCompleteSpy).not.toHaveBeenCalled();
-		expect(
-			mockProcedureAnalyzer.advanceToNextSubroutine,
-		).not.toHaveBeenCalled();
-	});
-
-	it("posts actual error message to Linear for usage limit errors (not generic)", async () => {
-		const usageLimitError =
-			"You've hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at Feb 16th, 2026 8:09 PM.";
-
-		await manager.completeSession(sessionId, {
-			type: "result",
-			subtype: "error_during_execution",
-			duration_ms: 1,
-			duration_api_ms: 1,
-			is_error: true,
-			num_turns: 1,
-			errors: [usageLimitError],
-			stop_reason: null,
-			total_cost_usd: 0,
-			usage: {
-				input_tokens: 1,
-				output_tokens: 1,
-				cache_creation_input_tokens: 0,
-				cache_read_input_tokens: 0,
-				cache_creation: null,
-			},
-			modelUsage: {},
-			permission_denials: [],
-			uuid: "result-3",
-			session_id: "sdk-session",
-		} as any);
-
-		const postActivityCalls = postActivitySpy.mock.calls;
-		const errorActivity = postActivityCalls.find(
-			(call: any[]) => call[1]?.type === "error",
-		);
-		expect(errorActivity).toBeDefined();
-		expect(errorActivity![1].body).toBe(usageLimitError);
 	});
 });

@@ -1,17 +1,10 @@
-import type {
-	EdgeWorkerConfig,
-	ILogger,
-	RepositoryConfig,
-	SylasAgentSession,
-} from "sylas-core";
+import type { EdgeWorkerConfig, ILogger, RepositoryConfig } from "sylas-core";
 import {
 	getAllTools,
 	getCoordinatorTools,
 	getReadOnlyTools,
 	getSafeTools,
 } from "sylas-core";
-
-import type { ProcedureAnalyzer } from "./procedures/index.js";
 
 const LEGACY_AGENT_ALIASES = {
 	opencode: String.fromCharCode(111, 109, 111),
@@ -512,36 +505,5 @@ export class RunnerSelectionService {
 		}
 
 		return disallowedTools;
-	}
-
-	/**
-	 * Merge subroutine-level disallowedTools with base disallowedTools
-	 * @param session Current agent session
-	 * @param baseDisallowedTools Base disallowed tools from repository/global config
-	 * @param logContext Context string for logging (e.g., "EdgeWorker", "resumeClaudeSession")
-	 * @param procedureAnalyzer ProcedureAnalyzer instance to resolve current subroutine
-	 * @returns Merged disallowed tools list
-	 */
-	public mergeSubroutineDisallowedTools(
-		session: SylasAgentSession,
-		baseDisallowedTools: string[],
-		logContext: string,
-		procedureAnalyzer: ProcedureAnalyzer,
-	): string[] {
-		const currentSubroutine = procedureAnalyzer.getCurrentSubroutine(session);
-		if (currentSubroutine?.disallowedTools) {
-			const mergedTools = [
-				...new Set([
-					...baseDisallowedTools,
-					...currentSubroutine.disallowedTools,
-				]),
-			];
-			this.logger.debug(
-				`[${logContext}] Merged subroutine-level disallowedTools for ${currentSubroutine.name}:`,
-				currentSubroutine.disallowedTools,
-			);
-			return mergedTools;
-		}
-		return baseDisallowedTools;
 	}
 }

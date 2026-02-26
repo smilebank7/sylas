@@ -105,12 +105,6 @@ import { ConfigManager, type RepositoryChanges } from "./ConfigManager.js";
 import { GitService } from "./GitService.js";
 import { GlobalSessionRegistry } from "./GlobalSessionRegistry.js";
 import { PromptBuilder } from "./PromptBuilder.js";
-import {
-	ProcedureAnalyzer,
-	type ProcedureDefinition,
-	type RequestClassification,
-	type SubroutineDefinition,
-} from "./procedures/index.js";
 import type {
 	IssueContextResult,
 	PromptAssembly,
@@ -181,7 +175,6 @@ export class EdgeWorker extends EventEmitter {
 	private sylasHome: string;
 	private globalSessionRegistry: GlobalSessionRegistry; // Centralized session storage across all repositories
 	private childToParentAgentSession: Map<string, string> = new Map(); // Maps child agentSessionId to parent agentSessionId
-	private procedureAnalyzer: ProcedureAnalyzer; // Intelligent workflow routing
 	private configPath?: string; // Path to config.json file
 	/** @internal - Exposed for testing only */
 	public repositoryRouter: RepositoryRouter; // Repository routing and selection
@@ -219,15 +212,6 @@ export class EdgeWorker extends EventEmitter {
 
 		// Initialize global session registry (centralized session storage)
 		this.globalSessionRegistry = new GlobalSessionRegistry();
-
-		// Initialize procedure router with haiku for fast classification
-		// Default to claude runner
-		this.procedureAnalyzer = new ProcedureAnalyzer({
-			sylasHome: this.sylasHome,
-			model: "gemini-2.5-flash-lite",
-			timeoutMs: 100000,
-			runnerType: "gemini",
-		});
 
 		// Initialize repository router with dependencies
 		const repositoryRouterDeps: RepositoryRouterDeps = {
@@ -373,60 +357,6 @@ export class EdgeWorker extends EventEmitter {
 							parentSessionId,
 							prompt,
 							childSessionId,
-							repo,
-							agentSessionManager,
-						);
-					},
-					this.procedureAnalyzer,
-					this.sharedApplicationServer,
-				);
-
-				// Subscribe to subroutine completion events
-				agentSessionManager.on(
-					"subroutineComplete",
-					async ({ sessionId, session }) => {
-						await this.handleSubroutineTransition(
-							sessionId,
-							session,
-							repo,
-							agentSessionManager,
-						);
-					},
-				);
-
-				// Subscribe to validation loop events
-				agentSessionManager.on(
-					"validationLoopIteration",
-					async ({
-						sessionId,
-						session,
-						fixerPrompt,
-						iteration,
-						maxIterations,
-					}) => {
-						this.logger.info(
-							`Validation loop iteration ${iteration}/${maxIterations}, running fixer`,
-						);
-						await this.handleValidationLoopFixer(
-							sessionId,
-							session,
-							repo,
-							agentSessionManager,
-							fixerPrompt,
-							iteration,
-						);
-					},
-				);
-
-				agentSessionManager.on(
-					"validationLoopRerun",
-					async ({ sessionId, session, iteration }) => {
-						this.logger.info(
-							`Validation loop re-running verifications (iteration ${iteration})`,
-						);
-						await this.handleValidationLoopRerun(
-							sessionId,
-							session,
 							repo,
 							agentSessionManager,
 						);
@@ -967,7 +897,6 @@ export class EdgeWorker extends EventEmitter {
 				undefined, // labels
 				undefined, // issueDescription
 				200, // maxTurns
-				false, // singleTurn
 			);
 
 			const runner = await createRunner(
@@ -1467,160 +1396,6 @@ ${taskInstructions}
 	}
 
 	/**
-	 * Handle subroutine transition when a subroutine completes
-	 * This is triggered by the AgentSessionManager's 'subroutineComplete' event
-	 */
-	private async handleSubroutineTransition(
-		sessionId: string,
-		session: SylasAgentSession,
-		repo: RepositoryConfig,
-		agentSessionManager: AgentSessionManager,
-	): Promise<void> {
-		const log = this.logger.withContext({ sessionId });
-		log.info(`Handling subroutine completion for session ${sessionId}`);
-
-		// Get next subroutine (advancement already handled by AgentSessionManager)
-		const nextSubroutine = this.procedureAnalyzer.getCurrentSubroutine(session);
-
-		if (!nextSubroutine) {
-			log.info(`Procedure complete for session ${sessionId}`);
-			return;
-		}
-
-		log.info(`Next subroutine: ${nextSubroutine.name}`);
-
-		// Load subroutine prompt
-		let subroutinePrompt: string | null;
-		try {
-			subroutinePrompt = await this.loadSubroutinePrompt(
-				nextSubroutine,
-				this.config.linearWorkspaceSlug,
-			);
-			if (!subroutinePrompt) {
-				// Fallback if loadSubroutinePrompt returns null
-				subroutinePrompt = `Continue with: ${nextSubroutine.description}`;
-			}
-		} catch (error) {
-			log.error(`Failed to load subroutine prompt:`, error);
-			// Fallback to simple prompt
-			subroutinePrompt = `Continue with: ${nextSubroutine.description}`;
-		}
-
-		// Resume Claude session with subroutine prompt
-		try {
-			await this.resumeAgentSession(
-				session,
-				repo,
-				sessionId,
-				agentSessionManager,
-				subroutinePrompt,
-				"", // No attachment manifest
-				false, // Not a new session
-				[], // No additional allowed directories
-				nextSubroutine?.singleTurn ? 1 : undefined, // singleTurn mode
-			);
-			log.info(
-				`Successfully resumed session for ${nextSubroutine.name} subroutine${nextSubroutine.singleTurn ? " (singleTurn)" : ""}`,
-			);
-		} catch (error) {
-			log.error(
-				`Failed to resume session for ${nextSubroutine.name} subroutine:`,
-				error,
-			);
-		}
-	}
-
-	/**
-	 * Handle validation loop fixer - run the fixer prompt
-	 */
-	private async handleValidationLoopFixer(
-		sessionId: string,
-		session: SylasAgentSession,
-		repo: RepositoryConfig,
-		agentSessionManager: AgentSessionManager,
-		fixerPrompt: string,
-		iteration: number,
-	): Promise<void> {
-		this.logger.info(
-			`Running fixer for session ${sessionId}, iteration ${iteration}`,
-		);
-
-		try {
-			await this.resumeAgentSession(
-				session,
-				repo,
-				sessionId,
-				agentSessionManager,
-				fixerPrompt,
-				"", // No attachment manifest
-				false, // Not a new session
-				[], // No additional allowed directories
-				undefined, // No maxTurns limit for fixer
-			);
-			this.logger.info(`Successfully started fixer for iteration ${iteration}`);
-		} catch (error) {
-			this.logger.error(
-				`Failed to run fixer for iteration ${iteration}:`,
-				error,
-			);
-		}
-	}
-
-	/**
-	 * Handle validation loop rerun - re-run the verifications subroutine
-	 */
-	private async handleValidationLoopRerun(
-		sessionId: string,
-		session: SylasAgentSession,
-		repo: RepositoryConfig,
-		agentSessionManager: AgentSessionManager,
-	): Promise<void> {
-		this.logger.info(`Re-running verifications for session ${sessionId}`);
-
-		// Get the verifications subroutine definition
-		const verificationsSubroutine =
-			this.procedureAnalyzer.getCurrentSubroutine(session);
-
-		if (
-			!verificationsSubroutine ||
-			verificationsSubroutine.name !== "verifications"
-		) {
-			this.logger.error(
-				`Expected verifications subroutine, got: ${verificationsSubroutine?.name}`,
-			);
-			return;
-		}
-
-		try {
-			// Load the verifications prompt
-			const subroutinePrompt = await this.loadSubroutinePrompt(
-				verificationsSubroutine,
-				this.config.linearWorkspaceSlug,
-			);
-
-			if (!subroutinePrompt) {
-				this.logger.error(`Failed to load verifications prompt`);
-				return;
-			}
-
-			await this.resumeAgentSession(
-				session,
-				repo,
-				sessionId,
-				agentSessionManager,
-				subroutinePrompt,
-				"", // No attachment manifest
-				false, // Not a new session
-				[], // No additional allowed directories
-				undefined, // No maxTurns limit
-			);
-			this.logger.info(`Successfully re-started verifications`);
-		} catch (error) {
-			this.logger.error(`Failed to re-run verifications:`, error);
-		}
-	}
-
-	/**
 	 * Add new repositories to the running EdgeWorker
 	 */
 	private async addNewRepositories(repos: RepositoryConfig[]): Promise<void> {
@@ -1687,60 +1462,6 @@ ${taskInstructions}
 							parentSessionId,
 							prompt,
 							childSessionId,
-							repo,
-							agentSessionManager,
-						);
-					},
-					this.procedureAnalyzer,
-					this.sharedApplicationServer,
-				);
-
-				// Subscribe to subroutine completion events
-				agentSessionManager.on(
-					"subroutineComplete",
-					async ({ sessionId, session }) => {
-						await this.handleSubroutineTransition(
-							sessionId,
-							session,
-							repo,
-							agentSessionManager,
-						);
-					},
-				);
-
-				// Subscribe to validation loop events
-				agentSessionManager.on(
-					"validationLoopIteration",
-					async ({
-						sessionId,
-						session,
-						fixerPrompt,
-						iteration,
-						maxIterations,
-					}) => {
-						this.logger.info(
-							`Validation loop iteration ${iteration}/${maxIterations}, running fixer`,
-						);
-						await this.handleValidationLoopFixer(
-							sessionId,
-							session,
-							repo,
-							agentSessionManager,
-							fixerPrompt,
-							iteration,
-						);
-					},
-				);
-
-				agentSessionManager.on(
-					"validationLoopRerun",
-					async ({ sessionId, session, iteration }) => {
-						this.logger.info(
-							`Validation loop re-running verifications (iteration ${iteration})`,
-						);
-						await this.handleValidationLoopRerun(
-							sessionId,
-							session,
 							repo,
 							agentSessionManager,
 						);
@@ -2673,140 +2394,11 @@ ${taskInstructions}
 			allowedDirectories,
 		} = sessionData;
 
-		// Initialize procedure metadata using intelligent routing
 		if (!session.metadata) {
 			session.metadata = {};
 		}
 
-		// Post ephemeral "Routing..." thought
-		await agentSessionManager.postAnalyzingThought(sessionId);
-
-		// Fetch labels early (needed for label override check)
 		const labels = await this.fetchIssueLabels(fullIssue);
-		// Lowercase labels for case-insensitive comparison
-		const lowercaseLabels = labels.map((label) => label.toLowerCase());
-
-		// Check for label overrides BEFORE AI routing
-		const debuggerConfig = repository.labelPrompts?.debugger;
-		const debuggerLabels = Array.isArray(debuggerConfig)
-			? debuggerConfig
-			: debuggerConfig?.labels;
-		const hasDebuggerLabel = debuggerLabels?.some((label: string) =>
-			lowercaseLabels.includes(label.toLowerCase()),
-		);
-
-		// ALWAYS check for 'orchestrator' label (case-insensitive) regardless of EdgeConfig
-		// This is a hardcoded rule: any issue with 'orchestrator'/'Orchestrator' label
-		// goes to orchestrator procedure
-		const hasHardcodedOrchestratorLabel =
-			lowercaseLabels.includes("orchestrator");
-
-		// Also check any additional orchestrator labels from config
-		const orchestratorConfig = repository.labelPrompts?.orchestrator;
-		const orchestratorLabels = Array.isArray(orchestratorConfig)
-			? orchestratorConfig
-			: orchestratorConfig?.labels;
-		const hasConfiguredOrchestratorLabel =
-			orchestratorLabels?.some((label: string) =>
-				lowercaseLabels.includes(label.toLowerCase()),
-			) ?? false;
-
-		const hasOrchestratorLabel =
-			hasHardcodedOrchestratorLabel || hasConfiguredOrchestratorLabel;
-
-		// Check for graphite label (for graphite-orchestrator combination)
-		const graphiteConfig = repository.labelPrompts?.graphite;
-		const graphiteLabels = Array.isArray(graphiteConfig)
-			? graphiteConfig
-			: (graphiteConfig?.labels ?? ["graphite"]);
-		const hasGraphiteLabel = graphiteLabels?.some((label: string) =>
-			lowercaseLabels.includes(label.toLowerCase()),
-		);
-
-		// Graphite-orchestrator requires BOTH graphite AND orchestrator labels
-		const hasGraphiteOrchestratorLabels =
-			hasGraphiteLabel && hasOrchestratorLabel;
-
-		let finalProcedure: ProcedureDefinition;
-		let finalClassification: RequestClassification;
-
-		// Smart runner override: OpenCode with oh-my-opencode gets full-delegation
-		// (bypasses AI routing and label-based procedure selection entirely)
-		const earlyRunnerSelection = this.determineRunnerSelection(
-			labels,
-			fullIssue.description || undefined,
-		);
-		if (earlyRunnerSelection.runnerType === "opencode") {
-			const fullDelegationProcedure =
-				this.procedureAnalyzer.getProcedure("full-delegation");
-			if (!fullDelegationProcedure) {
-				throw new Error("full-delegation procedure not found in registry");
-			}
-			finalProcedure = fullDelegationProcedure;
-			finalClassification = "code"; // Default classification; the runner handles everything
-			log.info(
-				`Using full-delegation procedure for OpenCode runner (bypassing AI routing)`,
-			);
-		} else if (hasDebuggerLabel) {
-			const debuggerProcedure =
-				this.procedureAnalyzer.getProcedure("debugger-full");
-			if (!debuggerProcedure) {
-				throw new Error("debugger-full procedure not found in registry");
-			}
-			finalProcedure = debuggerProcedure;
-			finalClassification = "debugger";
-			log.info(
-				`Using debugger-full procedure due to debugger label (skipping AI routing)`,
-			);
-		} else if (hasGraphiteOrchestratorLabels) {
-			// Graphite-orchestrator takes precedence over regular orchestrator when both labels present
-			const orchestratorProcedure =
-				this.procedureAnalyzer.getProcedure("orchestrator-full");
-			if (!orchestratorProcedure) {
-				throw new Error("orchestrator-full procedure not found in registry");
-			}
-			finalProcedure = orchestratorProcedure;
-			// Use orchestrator classification but the system prompt will be graphite-orchestrator
-			finalClassification = "orchestrator";
-			log.info(
-				`Using orchestrator-full procedure with graphite-orchestrator prompt (graphite + orchestrator labels)`,
-			);
-		} else if (hasOrchestratorLabel) {
-			const orchestratorProcedure =
-				this.procedureAnalyzer.getProcedure("orchestrator-full");
-			if (!orchestratorProcedure) {
-				throw new Error("orchestrator-full procedure not found in registry");
-			}
-			finalProcedure = orchestratorProcedure;
-			finalClassification = "orchestrator";
-			log.info(
-				`Using orchestrator-full procedure due to orchestrator label (skipping AI routing)`,
-			);
-		} else {
-			// No label override - use AI routing
-			const issueDescription =
-				`${issue.title}\n\n${fullIssue.description || ""}`.trim();
-			const routingDecision =
-				await this.procedureAnalyzer.determineRoutine(issueDescription);
-			finalProcedure = routingDecision.procedure;
-			finalClassification = routingDecision.classification;
-
-			// Log AI routing decision
-			log.info(`AI routing decision for ${sessionId}:`);
-			log.info(`  Classification: ${routingDecision.classification}`);
-			log.info(`  Procedure: ${finalProcedure.name}`);
-			log.info(`  Reasoning: ${routingDecision.reasoning}`);
-		}
-
-		// Initialize procedure metadata in session with final decision
-		this.procedureAnalyzer.initializeProcedureMetadata(session, finalProcedure);
-
-		// Post single procedure selection result (replaces ephemeral routing thought)
-		await agentSessionManager.postProcedureSelectionThought(
-			sessionId,
-			finalProcedure.name,
-			finalClassification,
-		);
 
 		// Build and start Claude with initial prompt using full issue (streaming mode)
 		log.info(`Building initial prompt for issue ${fullIssue.identifier}`);
@@ -2858,37 +2450,13 @@ ${taskInstructions}
 				}
 			}
 
-			// Get current subroutine to check for singleTurn mode and disallowAllTools
-			const currentSubroutine =
-				this.procedureAnalyzer.getCurrentSubroutine(session);
+			const allowedTools = this.buildAllowedTools(repository, promptType);
+			const disallowedTools = this.buildDisallowedTools(repository, promptType);
 
-			// Build allowed tools list with Linear MCP tools (now with prompt type context)
-			// If subroutine has disallowAllTools: true, use empty array to disable all tools
-			const allowedTools = currentSubroutine?.disallowAllTools
-				? []
-				: this.buildAllowedTools(repository, promptType);
-			const baseDisallowedTools = this.buildDisallowedTools(
-				repository,
-				promptType,
+			log.debug(
+				`Configured allowed tools for ${fullIssue.identifier}:`,
+				allowedTools,
 			);
-
-			// Merge subroutine-level disallowedTools if applicable
-			const disallowedTools = this.mergeSubroutineDisallowedTools(
-				session,
-				baseDisallowedTools,
-				"EdgeWorker",
-			);
-
-			if (currentSubroutine?.disallowAllTools) {
-				log.debug(
-					`All tools disabled for ${fullIssue.identifier} (subroutine: ${currentSubroutine.name})`,
-				);
-			} else {
-				log.debug(
-					`Configured allowed tools for ${fullIssue.identifier}:`,
-					allowedTools,
-				);
-			}
 			if (disallowedTools.length > 0) {
 				log.debug(
 					`Configured disallowed tools for ${fullIssue.identifier}:`,
@@ -2910,8 +2478,6 @@ ${taskInstructions}
 				labels, // Pass labels for runner selection and model override
 				fullIssue.description || undefined, // Description tags can override label selectors
 				undefined, // maxTurns
-				currentSubroutine?.singleTurn, // singleTurn flag
-				currentSubroutine?.disallowAllTools, // disallowAllTools flag - also disables MCP tools
 			);
 
 			log.debug(
@@ -4450,24 +4016,12 @@ ${taskInstructions}
 		parts.push(issueContext.prompt);
 		components.push("issue-context");
 
-		// 4. Load and append initial subroutine prompt
-		const currentSubroutine = this.procedureAnalyzer.getCurrentSubroutine(
-			input.session,
-		);
-		let subroutineName: string | undefined;
-		if (currentSubroutine) {
-			const subroutinePrompt = await this.loadSubroutinePrompt(
-				currentSubroutine,
+		const fullDelegationPrompt =
+			await this.promptBuilder.loadFullDelegationPrompt(
 				this.config.linearWorkspaceSlug,
 			);
-			if (subroutinePrompt) {
-				parts.push(subroutinePrompt);
-				components.push("subroutine-prompt");
-				subroutineName = currentSubroutine.name;
-			}
-		}
+		parts.push(fullDelegationPrompt);
 
-		// 5. Add user comment (if present)
 		// Skip for mention-triggered prompts since the comment is already in the mention block
 		if (input.userComment.trim() && !input.isMentionTriggered) {
 			// If we have author/timestamp metadata, include it for multi-player context
@@ -4488,7 +4042,6 @@ ${input.userComment}
 			components.push("user-comment");
 		}
 
-		// 6. Add guidance rules (if present)
 		if (input.guidance && input.guidance.length > 0) {
 			components.push("guidance-rules");
 		}
@@ -4498,7 +4051,6 @@ ${input.userComment}
 			userPrompt: parts.join("\n\n"),
 			metadata: {
 				components,
-				subroutineName,
 				promptType,
 				isNewSession: true,
 				isStreaming: false,
@@ -4561,17 +4113,6 @@ ${input.userComment}
 			return "label-based";
 		}
 		return "fallback";
-	}
-
-	/**
-	 * Load a subroutine prompt file
-	 * Extracted helper to make prompt assembly more readable
-	 */
-	private async loadSubroutinePrompt(
-		subroutine: SubroutineDefinition,
-		workspaceSlug?: string,
-	): Promise<string | null> {
-		return this.promptBuilder.loadSubroutinePrompt(subroutine, workspaceSlug);
 	}
 
 	/**
@@ -4658,8 +4199,6 @@ ${input.userComment}
 		labels?: string[],
 		issueDescription?: string,
 		maxTurns?: number,
-		singleTurn?: boolean,
-		disallowAllTools?: boolean,
 	): {
 		config: AgentRunnerConfig;
 		runnerType: "claude" | "gemini" | "codex" | "cursor" | "opencode";
@@ -4794,29 +4333,14 @@ ${input.userComment}
 			log.debug(`Model override via selector: ${modelOverride}`);
 		}
 
-		// Convert singleTurn flag to effective maxTurns value
-		const effectiveMaxTurns = singleTurn ? 1 : maxTurns;
-
 		// Determine final model from selectors, repository override, then runner-specific defaults
 		const finalModel =
 			modelOverride ||
 			repository.model ||
 			this.getDefaultModelForRunner(runnerType);
 
-		// When disallowAllTools is true, don't provide any MCP servers to ensure
-		// the agent cannot use any tools (including MCP-provided tools like Linear create_comment)
-		const mcpConfig = disallowAllTools
-			? undefined
-			: this.buildMcpConfig(repository, sessionId);
-		const mcpConfigPath = disallowAllTools
-			? undefined
-			: repository.mcpConfigPath;
-
-		if (disallowAllTools) {
-			log.info(
-				`MCP tools disabled for session ${sessionId} (disallowAllTools=true)`,
-			);
-		}
+		const mcpConfig = this.buildMcpConfig(repository, sessionId);
+		const mcpConfigPath = repository.mcpConfigPath;
 
 		const config = {
 			workingDirectory: session.workspace.path,
@@ -4828,9 +4352,6 @@ ${input.userComment}
 			mcpConfigPath,
 			mcpConfig,
 			appendSystemPrompt: systemPrompt || "",
-			// When disallowAllTools is true, remove all built-in tools from model context
-			// so Claude cannot see or attempt tool use (distinct from allowedTools which only controls permissions)
-			...(disallowAllTools && { tools: [] }),
 			// Priority order: label override > repository config > global default
 			model: finalModel,
 			fallbackModel:
@@ -4898,11 +4419,8 @@ ${input.userComment}
 			(config as any).resumeSessionId = resumeSessionId;
 		}
 
-		if (effectiveMaxTurns !== undefined) {
-			(config as any).maxTurns = effectiveMaxTurns;
-			if (singleTurn) {
-				log.debug(`Applied singleTurn maxTurns=1`);
-			}
+		if (maxTurns !== undefined) {
+			(config as any).maxTurns = maxTurns;
 		}
 
 		return { config, runnerType };
@@ -4947,26 +4465,6 @@ ${input.userComment}
 		return this.runnerSelectionService.buildDisallowedTools(
 			repository,
 			promptType,
-		);
-	}
-
-	/**
-	 * Merge subroutine-level disallowedTools with base disallowedTools
-	 * @param session Current agent session
-	 * @param baseDisallowedTools Base disallowed tools from repository/global config
-	 * @param logContext Context string for logging (e.g., "EdgeWorker", "resumeClaudeSession")
-	 * @returns Merged disallowed tools list
-	 */
-	private mergeSubroutineDisallowedTools(
-		session: SylasAgentSession,
-		baseDisallowedTools: string[],
-		logContext: string,
-	): string[] {
-		return this.runnerSelectionService.mergeSubroutineDisallowedTools(
-			session,
-			baseDisallowedTools,
-			logContext,
-			this.procedureAnalyzer,
 		);
 	}
 
@@ -5269,105 +4767,6 @@ ${input.userComment}
 	}
 
 	/**
-	 * Re-route procedure for a session (used when resuming from child or give feedback)
-	 * This ensures the currentSubroutine is reset to avoid suppression issues
-	 */
-	private async rerouteProcedureForSession(
-		session: SylasAgentSession,
-		sessionId: string,
-		agentSessionManager: AgentSessionManager,
-		promptBody: string,
-		repository: RepositoryConfig,
-	): Promise<void> {
-		// Initialize procedure metadata using intelligent routing
-		if (!session.metadata) {
-			session.metadata = {};
-		}
-
-		// Post ephemeral "Routing..." thought
-		await agentSessionManager.postAnalyzingThought(sessionId);
-
-		// Fetch full issue and labels to check for Orchestrator label override
-		const issueTracker = this.issueTrackers.get(repository.id);
-		let hasOrchestratorLabel = false;
-
-		// Get issueId from issueContext (preferred) or deprecated issueId field
-		const issueId = session.issueContext?.issueId ?? session.issueId;
-		if (issueTracker && issueId) {
-			try {
-				const fullIssue = await issueTracker.fetchIssue(issueId);
-				const labels = await this.fetchIssueLabels(fullIssue);
-
-				// ALWAYS check for 'orchestrator' label (case-insensitive) regardless of EdgeConfig
-				// This is a hardcoded rule: any issue with 'orchestrator'/'Orchestrator' label
-				// goes to orchestrator procedure
-				const lowercaseLabels = labels.map((label) => label.toLowerCase());
-				const hasHardcodedOrchestratorLabel =
-					lowercaseLabels.includes("orchestrator");
-
-				// Also check any additional orchestrator labels from config
-				const orchestratorConfig = repository.labelPrompts?.orchestrator;
-				const orchestratorLabels = Array.isArray(orchestratorConfig)
-					? orchestratorConfig
-					: orchestratorConfig?.labels;
-				const hasConfiguredOrchestratorLabel =
-					orchestratorLabels?.some((label: string) =>
-						lowercaseLabels.includes(label.toLowerCase()),
-					) ?? false;
-
-				hasOrchestratorLabel =
-					hasHardcodedOrchestratorLabel || hasConfiguredOrchestratorLabel;
-			} catch (error) {
-				this.logger.error(`Failed to fetch issue labels for routing:`, error);
-				// Continue with AI routing if label fetch fails
-			}
-		}
-
-		let selectedProcedure: ProcedureDefinition;
-		let finalClassification: RequestClassification;
-
-		// If Orchestrator label is present, ALWAYS use orchestrator-full procedure
-		if (hasOrchestratorLabel) {
-			const orchestratorProcedure =
-				this.procedureAnalyzer.getProcedure("orchestrator-full");
-			if (!orchestratorProcedure) {
-				throw new Error("orchestrator-full procedure not found in registry");
-			}
-			selectedProcedure = orchestratorProcedure;
-			finalClassification = "orchestrator";
-			this.logger.info(
-				`Using orchestrator-full procedure due to Orchestrator label (skipping AI routing)`,
-			);
-		} else {
-			// No Orchestrator label - use AI routing based on prompt content
-			const routingDecision = await this.procedureAnalyzer.determineRoutine(
-				promptBody.trim(),
-			);
-			selectedProcedure = routingDecision.procedure;
-			finalClassification = routingDecision.classification;
-
-			// Log AI routing decision
-			this.logger.info(`AI routing decision for ${sessionId}:`);
-			this.logger.info(`  Classification: ${routingDecision.classification}`);
-			this.logger.info(`  Procedure: ${selectedProcedure.name}`);
-			this.logger.info(`  Reasoning: ${routingDecision.reasoning}`);
-		}
-
-		// Initialize procedure metadata in session (resets currentSubroutine)
-		this.procedureAnalyzer.initializeProcedureMetadata(
-			session,
-			selectedProcedure,
-		);
-
-		// Post procedure selection result (replaces ephemeral routing thought)
-		await agentSessionManager.postProcedureSelectionThought(
-			sessionId,
-			selectedProcedure.name,
-			finalClassification,
-		);
-	}
-
-	/**
 	 * Handle prompt with streaming check - centralized logic for all input types
 	 *
 	 * This method implements the unified pattern for handling prompts:
@@ -5404,17 +4803,7 @@ ${input.userComment}
 		const existingRunner = session.agentRunner;
 		const isRunning = existingRunner?.isRunning() || false;
 
-		// Always route procedure for new input, UNLESS actively running
-		if (!isRunning) {
-			await this.rerouteProcedureForSession(
-				session,
-				sessionId,
-				agentSessionManager,
-				promptBody,
-				repository,
-			);
-			log.debug(`Routed procedure for ${logContext}`);
-		} else {
+		if (isRunning) {
 			log.debug(
 				`Skipping routing for ${sessionId} (${logContext}) - runner is actively running`,
 			);
@@ -5565,30 +4954,8 @@ ${input.userComment}
 		const systemPrompt = systemPromptResult?.prompt;
 		const promptType = systemPromptResult?.type;
 
-		// Get current subroutine to check for singleTurn mode and disallowAllTools
-		const currentSubroutine =
-			this.procedureAnalyzer.getCurrentSubroutine(session);
-
-		// Build allowed tools list
-		// If subroutine has disallowAllTools: true, use empty array to disable all tools
-		const allowedTools = currentSubroutine?.disallowAllTools
-			? []
-			: this.buildAllowedTools(repository, promptType);
-		const baseDisallowedTools = this.buildDisallowedTools(
-			repository,
-			promptType,
-		);
-
-		// Merge subroutine-level disallowedTools if applicable
-		const disallowedTools = this.mergeSubroutineDisallowedTools(
-			session,
-			baseDisallowedTools,
-			"resumeClaudeSession",
-		);
-
-		if (currentSubroutine?.disallowAllTools) {
-			log.debug(`All tools disabled for subroutine: ${currentSubroutine.name}`);
-		}
+		const allowedTools = this.buildAllowedTools(repository, promptType);
+		const disallowedTools = this.buildDisallowedTools(repository, promptType);
 
 		// Set up attachments directory
 		const workspaceFolderName = basename(session.workspace.path);
@@ -5639,8 +5006,6 @@ ${input.userComment}
 			labels, // Always pass labels to preserve model override
 			fullIssue.description || undefined, // Description tags can override label selectors
 			maxTurns, // Pass maxTurns if specified
-			currentSubroutine?.singleTurn, // singleTurn flag
-			currentSubroutine?.disallowAllTools, // disallowAllTools flag - also disables MCP tools
 		);
 
 		// Create the appropriate runner based on session state

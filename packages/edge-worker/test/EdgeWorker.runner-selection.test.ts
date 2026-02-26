@@ -10,7 +10,6 @@ import {
 import { readFile } from "node:fs/promises";
 import { LinearClient } from "@linear/sdk";
 import { ClaudeRunner } from "sylas-claude-runner";
-import { CodexRunner } from "sylas-codex-runner";
 import type { LinearAgentSessionCreatedWebhook } from "sylas-core";
 import {
 	isAgentSessionCreatedWebhook,
@@ -24,6 +23,8 @@ import { AgentSessionManager } from "../src/AgentSessionManager.js";
 import { EdgeWorker } from "../src/EdgeWorker.js";
 import { SharedApplicationServer } from "../src/SharedApplicationServer.js";
 import type { EdgeWorkerConfig, RepositoryConfig } from "../src/types.js";
+
+const CodexRunner = mock();
 
 // Mock fs/promises
 mock.module("fs/promises", () => ({
@@ -40,8 +41,7 @@ mock.module("sylas-claude-runner", () => ({
 	ClaudeRunner: mock(),
 }));
 mock.module("sylas-codex-runner", () => ({
-	...require("sylas-codex-runner"),
-	CodexRunner: mock(),
+	CodexRunner,
 }));
 mock.module("sylas-cursor-runner", () => ({
 	...require("sylas-cursor-runner"),
