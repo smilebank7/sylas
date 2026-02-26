@@ -154,10 +154,11 @@ export class ChatSessionHandler<TEvent> {
 
 					const resumeSessionId =
 						existingSession.claudeSessionId ||
-						existingSession.geminiSessionId ||
 						existingSession.codexSessionId ||
-						existingSession.cursorSessionId ||
 						existingSession.openCodeSessionId;
+					// TEMPORARILY DISABLED: runner consolidation v2
+					// existingSession.geminiSessionId ||
+					// existingSession.cursorSessionId ||
 
 					if (resumeSessionId) {
 						try {

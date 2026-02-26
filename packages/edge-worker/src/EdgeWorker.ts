@@ -3089,9 +3089,7 @@ ${taskInstructions}
 	 * Resolve default model for a given runner from config with sensible built-in defaults.
 	 * Supports legacy config keys for backwards compatibility.
 	 */
-	private getDefaultModelForRunner(
-		runnerType: "claude" | "gemini" | "codex" | "cursor" | "opencode",
-	): string {
+	private getDefaultModelForRunner(runnerType: "opencode" | "claude"): string {
 		return this.runnerSelectionService.getDefaultModelForRunner(runnerType);
 	}
 
@@ -3100,7 +3098,7 @@ ${taskInstructions}
 	 * Supports legacy Claude fallback key for backwards compatibility.
 	 */
 	private getDefaultFallbackModelForRunner(
-		runnerType: "claude" | "gemini" | "codex" | "cursor" | "opencode",
+		runnerType: "opencode" | "claude",
 	): string {
 		return this.runnerSelectionService.getDefaultFallbackModelForRunner(
 			runnerType,
@@ -3111,7 +3109,7 @@ ${taskInstructions}
 	 * Determine runner type and model using labels + issue description tags.
 	 *
 	 * Supported description tags:
-	 * - [agent=claude|gemini|codex|cursor|opencode]
+	 * - [agent=claude|opencode]
 	 * - [model=<model-name>]
 	 *
 	 * Precedence:
@@ -3123,7 +3121,7 @@ ${taskInstructions}
 		labels: string[],
 		issueDescription?: string,
 	): {
-		runnerType: "claude" | "gemini" | "codex" | "cursor" | "opencode";
+		runnerType: "opencode" | "claude";
 		modelOverride?: string;
 		fallbackModelOverride?: string;
 	} {
@@ -4201,7 +4199,7 @@ ${input.userComment}
 		maxTurns?: number,
 	): {
 		config: AgentRunnerConfig;
-		runnerType: "claude" | "gemini" | "codex" | "cursor" | "opencode";
+		runnerType: "opencode" | "claude";
 	} {
 		const log = this.logger.withContext({
 			sessionId,
@@ -4310,23 +4308,27 @@ ${input.userComment}
 			runnerType = "claude";
 			modelOverride = this.getDefaultModelForRunner("claude");
 			fallbackModelOverride = this.getDefaultFallbackModelForRunner("claude");
-		} else if (session.geminiSessionId && runnerType !== "gemini") {
-			runnerType = "gemini";
-			modelOverride = this.getDefaultModelForRunner("gemini");
-			fallbackModelOverride = this.getDefaultFallbackModelForRunner("gemini");
-		} else if (session.codexSessionId && runnerType !== "codex") {
-			runnerType = "codex";
-			modelOverride = this.getDefaultModelForRunner("codex");
-			fallbackModelOverride = this.getDefaultFallbackModelForRunner("codex");
-		} else if (session.cursorSessionId && runnerType !== "cursor") {
-			runnerType = "cursor";
-			modelOverride = this.getDefaultModelForRunner("cursor");
-			fallbackModelOverride = this.getDefaultFallbackModelForRunner("cursor");
 		} else if (session.openCodeSessionId && runnerType !== "opencode") {
 			runnerType = "opencode";
 			modelOverride = this.getDefaultModelForRunner("opencode");
 			fallbackModelOverride = this.getDefaultFallbackModelForRunner("opencode");
 		}
+		// TEMPORARILY DISABLED: runner consolidation v2
+		// else if (session.cursorSessionId && runnerType !== "cursor") {
+		// 	runnerType = "cursor";
+		// 	modelOverride = this.getDefaultModelForRunner("cursor");
+		// 	fallbackModelOverride = this.getDefaultFallbackModelForRunner("cursor");
+		// }
+		// TEMPORARILY DISABLED: runner consolidation v2
+		// } else if (session.geminiSessionId && runnerType !== "gemini") {
+		// 	runnerType = "gemini";
+		// 	modelOverride = this.getDefaultModelForRunner("gemini");
+		// 	fallbackModelOverride = this.getDefaultFallbackModelForRunner("gemini");
+		// } else if (session.codexSessionId && runnerType !== "codex") {
+		// 	runnerType = "codex";
+		// 	modelOverride = this.getDefaultModelForRunner("codex");
+		// 	fallbackModelOverride = this.getDefaultFallbackModelForRunner("codex");
+		// }
 
 		// Log model override if found
 		if (modelOverride) {
@@ -4377,28 +4379,24 @@ ${input.userComment}
 
 		// Cursor runner-specific wiring for offline/headless harness
 		// We pass these as loose fields to avoid widening core runner types.
-		if (runnerType === "cursor") {
-			const approvalPolicy = (process.env.SYLAS_APPROVAL_POLICY || "never") as
-				| "never"
-				| "on-request"
-				| "on-failure"
-				| "untrusted";
-			// Cursor CLI binary path (defaults to relying on PATH)
-			(config as any).cursorPath =
-				process.env.CURSOR_AGENT_PATH || process.env.CURSOR_PATH || undefined;
-			// API key for headless auth (optional; CLI may also read CURSOR_API_KEY directly)
-			(config as any).cursorApiKey = process.env.CURSOR_API_KEY || undefined;
-			// Keep headless runs non-interactive by default in F1/CLI environments
-			(config as any).askForApproval = approvalPolicy;
-			(config as any).approveMcps = true;
-			// Default to enabled sandbox for tool execution isolation; set SYLAS_SANDBOX=disabled to disable
-			(config as any).sandbox = (process.env.SYLAS_SANDBOX || "enabled") as
-				| "enabled"
-				| "disabled";
-			// Expected cursor-agent version for pre-run validation; mismatch posts error to Linear
-			(config as any).cursorAgentVersion =
-				process.env.SYLAS_CURSOR_AGENT_VERSION || undefined;
-		}
+		// TEMPORARILY DISABLED: runner consolidation v2
+		// if (runnerType === "cursor") {
+		// 	const approvalPolicy = (process.env.SYLAS_APPROVAL_POLICY || "never") as
+		// 		| "never"
+		// 		| "on-request"
+		// 		| "on-failure"
+		// 		| "untrusted";
+		// 	(config as any).cursorPath =
+		// 		process.env.CURSOR_AGENT_PATH || process.env.CURSOR_PATH || undefined;
+		// 	(config as any).cursorApiKey = process.env.CURSOR_API_KEY || undefined;
+		// 	(config as any).askForApproval = approvalPolicy;
+		// 	(config as any).approveMcps = true;
+		// 	(config as any).sandbox = (process.env.SYLAS_SANDBOX || "enabled") as
+		// 		| "enabled"
+		// 		| "disabled";
+		// 	(config as any).cursorAgentVersion =
+		// 		process.env.SYLAS_CURSOR_AGENT_VERSION || undefined;
+		// }
 
 		// OpenCode runner-specific wiring
 		if (runnerType === "opencode") {
@@ -4935,15 +4933,10 @@ ${input.userComment}
 
 		// Determine which runner to use based on existing session IDs
 		const hasClaudeSession = !isNewSession && Boolean(session.claudeSessionId);
-		const hasGeminiSession = !isNewSession && Boolean(session.geminiSessionId);
-		const hasCodexSession = !isNewSession && Boolean(session.codexSessionId);
-		const hasCursorSession = !isNewSession && Boolean(session.cursorSessionId);
+		const hasOpenCodeSession =
+			!isNewSession && Boolean(session.openCodeSessionId);
 		const needsNewSession =
-			isNewSession ||
-			(!hasClaudeSession &&
-				!hasGeminiSession &&
-				!hasCodexSession &&
-				!hasCursorSession);
+			isNewSession || (!hasClaudeSession && !hasOpenCodeSession);
 
 		// Fetch system prompt based on labels
 
@@ -4979,13 +4972,11 @@ ${input.userComment}
 			? undefined
 			: session.claudeSessionId
 				? session.claudeSessionId
-				: session.geminiSessionId
-					? session.geminiSessionId
-					: session.codexSessionId
-						? session.codexSessionId
-						: session.cursorSessionId
-							? session.cursorSessionId
-							: session.openCodeSessionId;
+				: session.openCodeSessionId;
+		// TEMPORARILY DISABLED: runner consolidation v2
+		// : session.cursorSessionId
+		// 	? session.cursorSessionId
+		// 	: undefined;
 
 		console.log(
 			`[resumeAgentSession] needsNewSession=${needsNewSession}, resumeSessionId=${resumeSessionId ?? "none"}`,

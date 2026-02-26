@@ -61,8 +61,11 @@ export interface SylasAgentSession {
 	workspace: Workspace;
 	// NOTE: Only one of these will be populated
 	claudeSessionId?: string; // Claude-specific session ID (assigned once it initializes)
+	/** @deprecated TEMPORARILY DISABLED: runner consolidation v2 */
 	geminiSessionId?: string; // Gemini-specific session ID (assigned once it initializes)
+	/** @deprecated TEMPORARILY DISABLED: runner consolidation v2 */
 	codexSessionId?: string; // Codex-specific session ID (assigned once it initializes)
+	/** @deprecated TEMPORARILY DISABLED: runner consolidation v2 */
 	cursorSessionId?: string; // Cursor-specific session ID (assigned once it initializes)
 	openCodeSessionId?: string; // OpenCode-specific session ID (assigned once it initializes)
 	agentRunner?: IAgentRunner;
@@ -79,8 +82,11 @@ export interface SylasAgentSession {
 
 export interface SylasAgentSessionEntry {
 	claudeSessionId?: string; // originated in this Claude session (if using Claude)
+	/** @deprecated TEMPORARILY DISABLED: runner consolidation v2 */
 	geminiSessionId?: string; // originated in this Gemini session (if using Gemini)
+	/** @deprecated TEMPORARILY DISABLED: runner consolidation v2 */
 	codexSessionId?: string; // originated in this Codex session (if using Codex)
+	/** @deprecated TEMPORARILY DISABLED: runner consolidation v2 */
 	cursorSessionId?: string; // originated in this Cursor session (if using Cursor)
 	openCodeSessionId?: string; // originated in this OpenCode session (if using OpenCode)
 	linearAgentActivityId?: string; // got assigned this ID in linear, after creation, for this 'agent activity'

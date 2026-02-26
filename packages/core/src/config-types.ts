@@ -168,4 +168,9 @@ export interface EdgeWorkerRuntimeConfig {
  *   },
  * };
  */
-export type EdgeWorkerConfig = EdgeConfig & EdgeWorkerRuntimeConfig;
+export interface EdgeWorkerConfig extends EdgeConfig, EdgeWorkerRuntimeConfig {
+	/** @deprecated TEMPORARILY DISABLED: runner consolidation v2 */
+	geminiDefaultModel?: string;
+	/** @deprecated TEMPORARILY DISABLED: runner consolidation v2 */
+	codexDefaultModel?: string;
+}

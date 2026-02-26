@@ -184,26 +184,30 @@ export class AgentSessionManager extends EventEmitter {
 		const runnerType =
 			runner?.constructor.name === "OpenCodeRunner"
 				? "opencode"
-				: runner?.constructor.name === "GeminiRunner"
-					? "gemini"
-					: runner?.constructor.name === "CodexRunner"
-						? "codex"
-						: runner?.constructor.name === "CursorRunner"
-							? "cursor"
-							: "claude";
+				: runner?.constructor.name === "CodexRunner"
+					? "codex"
+					: "claude";
+		// TEMPORARILY DISABLED: runner consolidation v2
+		// : runner?.constructor.name === "GeminiRunner"
+		// 	? "gemini"
+		// 	: runner?.constructor.name === "CursorRunner"
+		// 		? "cursor"
+		// 		: "claude";
 
 		// Update the appropriate session ID based on runner type
 		if (runnerType === "opencode") {
 			linearSession.openCodeSessionId = claudeSystemMessage.session_id;
-		} else if (runnerType === "gemini") {
-			linearSession.geminiSessionId = claudeSystemMessage.session_id;
 		} else if (runnerType === "codex") {
 			linearSession.codexSessionId = claudeSystemMessage.session_id;
-		} else if (runnerType === "cursor") {
-			linearSession.cursorSessionId = claudeSystemMessage.session_id;
 		} else {
 			linearSession.claudeSessionId = claudeSystemMessage.session_id;
 		}
+		// TEMPORARILY DISABLED: runner consolidation v2
+		// } else if (runnerType === "gemini") {
+		// 	linearSession.geminiSessionId = claudeSystemMessage.session_id;
+		// } else if (runnerType === "cursor") {
+		// 	linearSession.cursorSessionId = claudeSystemMessage.session_id;
+		// }
 
 		linearSession.updatedAt = Date.now();
 		linearSession.metadata = {
@@ -244,25 +248,29 @@ export class AgentSessionManager extends EventEmitter {
 		const runnerType =
 			runner?.constructor.name === "OpenCodeRunner"
 				? "opencode"
-				: runner?.constructor.name === "GeminiRunner"
-					? "gemini"
-					: runner?.constructor.name === "CodexRunner"
-						? "codex"
-						: runner?.constructor.name === "CursorRunner"
-							? "cursor"
-							: "claude";
+				: runner?.constructor.name === "CodexRunner"
+					? "codex"
+					: "claude";
+		// TEMPORARILY DISABLED: runner consolidation v2
+		// : runner?.constructor.name === "GeminiRunner"
+		// 	? "gemini"
+		// 	: runner?.constructor.name === "CursorRunner"
+		// 		? "cursor"
+		// 		: "claude";
 
 		const sessionEntry: SylasAgentSessionEntry = {
 			// Set the appropriate session ID based on runner type
 			...(runnerType === "opencode"
 				? { openCodeSessionId: sdkMessage.session_id }
-				: runnerType === "gemini"
-					? { geminiSessionId: sdkMessage.session_id }
-					: runnerType === "codex"
-						? { codexSessionId: sdkMessage.session_id }
-						: runnerType === "cursor"
-							? { cursorSessionId: sdkMessage.session_id }
-							: { claudeSessionId: sdkMessage.session_id }),
+				: runnerType === "codex"
+					? { codexSessionId: sdkMessage.session_id }
+					: { claudeSessionId: sdkMessage.session_id }),
+			// TEMPORARILY DISABLED: runner consolidation v2
+			// : runnerType === "gemini"
+			// 	? { geminiSessionId: sdkMessage.session_id }
+			// 	: runnerType === "cursor"
+			// 		? { cursorSessionId: sdkMessage.session_id }
+			// 		: { claudeSessionId: sdkMessage.session_id }),
 			type: sdkMessage.type,
 			content: this.extractContent(sdkMessage),
 			metadata: {
@@ -495,13 +503,15 @@ export class AgentSessionManager extends EventEmitter {
 		const runnerType =
 			runner?.constructor.name === "OpenCodeRunner"
 				? "opencode"
-				: runner?.constructor.name === "GeminiRunner"
-					? "gemini"
-					: runner?.constructor.name === "CodexRunner"
-						? "codex"
-						: runner?.constructor.name === "CursorRunner"
-							? "cursor"
-							: "claude";
+				: runner?.constructor.name === "CodexRunner"
+					? "codex"
+					: "claude";
+		// TEMPORARILY DISABLED: runner consolidation v2
+		// : runner?.constructor.name === "GeminiRunner"
+		// 	? "gemini"
+		// 	: runner?.constructor.name === "CursorRunner"
+		// 		? "cursor"
+		// 		: "claude";
 
 		// For error results, content may be in errors[] rather than result
 		const content =
@@ -518,13 +528,15 @@ export class AgentSessionManager extends EventEmitter {
 			// Set the appropriate session ID based on runner type
 			...(runnerType === "opencode"
 				? { openCodeSessionId: resultMessage.session_id }
-				: runnerType === "gemini"
-					? { geminiSessionId: resultMessage.session_id }
-					: runnerType === "codex"
-						? { codexSessionId: resultMessage.session_id }
-						: runnerType === "cursor"
-							? { cursorSessionId: resultMessage.session_id }
-							: { claudeSessionId: resultMessage.session_id }),
+				: runnerType === "codex"
+					? { codexSessionId: resultMessage.session_id }
+					: { claudeSessionId: resultMessage.session_id }),
+			// TEMPORARILY DISABLED: runner consolidation v2
+			// : runnerType === "gemini"
+			// 	? { geminiSessionId: resultMessage.session_id }
+			// 	: runnerType === "cursor"
+			// 		? { cursorSessionId: resultMessage.session_id }
+			// 		: { claudeSessionId: resultMessage.session_id }),
 			type: "result",
 			content,
 			metadata: {

@@ -4,14 +4,17 @@ import { createLogger } from "sylas-core";
 /**
  * Known runner types and their corresponding npm package names.
  */
-export type RunnerKind = "opencode" | "claude" | "codex" | "gemini" | "cursor";
+export type RunnerKind = "opencode" | "claude";
 
 const RUNNER_PACKAGES: Record<RunnerKind, string> = {
 	opencode: "sylas-opencode-runner",
 	claude: "sylas-claude-runner",
-	codex: "sylas-codex-runner",
-	gemini: "sylas-gemini-runner",
-	cursor: "sylas-cursor-runner",
+	// TEMPORARILY DISABLED: runner consolidation v2
+	// codex: "sylas-codex-runner",
+	// TEMPORARILY DISABLED: runner consolidation v2
+	// gemini: "sylas-gemini-runner",
+	// TEMPORARILY DISABLED: runner consolidation v2
+	// cursor: "sylas-cursor-runner",
 };
 
 /**
@@ -21,9 +24,12 @@ const RUNNER_PACKAGES: Record<RunnerKind, string> = {
 const RUNNER_EXPORT_NAMES: Record<RunnerKind, string> = {
 	opencode: "OpenCodeRunner",
 	claude: "ClaudeRunner",
-	codex: "CodexRunner",
-	gemini: "GeminiRunner",
-	cursor: "CursorRunner",
+	// TEMPORARILY DISABLED: runner consolidation v2
+	// codex: "CodexRunner",
+	// TEMPORARILY DISABLED: runner consolidation v2
+	// gemini: "GeminiRunner",
+	// TEMPORARILY DISABLED: runner consolidation v2
+	// cursor: "CursorRunner",
 };
 
 export class RunnerNotInstalledError extends Error {
@@ -69,15 +75,18 @@ export async function createRunner(
 			case "claude":
 				mod = await import("sylas-claude-runner");
 				break;
-			case "codex":
-				mod = await import("sylas-codex-runner");
-				break;
-			case "gemini":
-				mod = await import("sylas-gemini-runner");
-				break;
-			case "cursor":
-				mod = await import("sylas-cursor-runner");
-				break;
+			// TEMPORARILY DISABLED: runner consolidation v2
+			// case "codex":
+			// 	mod = await import("sylas-codex-runner");
+			// 	break;
+			// TEMPORARILY DISABLED: runner consolidation v2
+			// case "gemini":
+			// 	mod = await import("sylas-gemini-runner");
+			// 	break;
+			// TEMPORARILY DISABLED: runner consolidation v2
+			// case "cursor":
+			// 	mod = await import("sylas-cursor-runner");
+			// 	break;
 			default: {
 				const _exhaustive: never = kind;
 				throw new Error(`Unknown runner kind: ${_exhaustive}`);
