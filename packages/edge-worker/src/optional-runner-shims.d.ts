@@ -4,7 +4,7 @@
  * In CI (or any environment) where these packages haven't been built yet,
  * TypeScript cannot resolve their type declarations during edge-worker
  * compilation. These ambient module declarations let the dynamic imports
- * in RunnerRegistry.ts and ProcedureAnalyzer.ts compile without errors.
+ * in RunnerRegistry.ts compile without errors.
  *
  * At runtime the real packages are resolved through workspace links.
  */

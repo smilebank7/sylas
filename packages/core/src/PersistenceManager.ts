@@ -45,8 +45,11 @@ interface V2SylasAgentSession {
 		historyPath?: string;
 	};
 	claudeSessionId?: string;
+	// TEMPORARILY DISABLED: runner consolidation v2
 	geminiSessionId?: string;
+	// TEMPORARILY DISABLED: runner consolidation v2
 	codexSessionId?: string;
+	// TEMPORARILY DISABLED: runner consolidation v2
 	cursorSessionId?: string;
 	openCodeSessionId?: string;
 	metadata?: Record<string, unknown>;
@@ -223,8 +226,11 @@ export class PersistenceManager {
 			updatedAt: v2Session.updatedAt,
 			workspace: v2Session.workspace,
 			claudeSessionId: v2Session.claudeSessionId,
+			// TEMPORARILY DISABLED: runner consolidation v2
 			geminiSessionId: v2Session.geminiSessionId,
+			// TEMPORARILY DISABLED: runner consolidation v2
 			codexSessionId: v2Session.codexSessionId,
+			// TEMPORARILY DISABLED: runner consolidation v2
 			cursorSessionId: v2Session.cursorSessionId,
 			openCodeSessionId: v2Session.openCodeSessionId,
 			metadata: v2Session.metadata,

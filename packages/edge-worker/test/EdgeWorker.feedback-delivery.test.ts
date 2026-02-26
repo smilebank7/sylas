@@ -196,21 +196,6 @@ describe("EdgeWorker - Feedback Delivery", () => {
 
 		edgeWorker = new EdgeWorker(mockConfig);
 
-		const fullDevelopmentProcedure = (
-			edgeWorker as any
-		).procedureAnalyzer.getProcedure("full-development");
-		if (!fullDevelopmentProcedure) {
-			throw new Error("full-development procedure not found");
-		}
-		spyOn(
-			(edgeWorker as any).procedureAnalyzer,
-			"determineRoutine",
-		).mockResolvedValue({
-			classification: "code",
-			procedure: fullDevelopmentProcedure,
-			reasoning: "mocked for feedback tests",
-		});
-
 		// Spy on resumeAgentSession method
 		resumeAgentSessionSpy = spyOn(
 			edgeWorker as any,

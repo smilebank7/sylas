@@ -10,7 +10,6 @@ import {
 import { readFile } from "node:fs/promises";
 import { LinearClient } from "@linear/sdk";
 import { ClaudeRunner } from "sylas-claude-runner";
-import { CodexRunner } from "sylas-codex-runner";
 import type { LinearAgentSessionCreatedWebhook } from "sylas-core";
 import {
 	isAgentSessionCreatedWebhook,
@@ -24,6 +23,8 @@ import { AgentSessionManager } from "../src/AgentSessionManager.js";
 import { EdgeWorker } from "../src/EdgeWorker.js";
 import { SharedApplicationServer } from "../src/SharedApplicationServer.js";
 import type { EdgeWorkerConfig, RepositoryConfig } from "../src/types.js";
+
+const CodexRunner = mock();
 
 // Mock fs/promises
 mock.module("fs/promises", () => ({
@@ -40,8 +41,7 @@ mock.module("sylas-claude-runner", () => ({
 	ClaudeRunner: mock(),
 }));
 mock.module("sylas-codex-runner", () => ({
-	...require("sylas-codex-runner"),
-	CodexRunner: mock(),
+	CodexRunner,
 }));
 mock.module("sylas-cursor-runner", () => ({
 	...require("sylas-cursor-runner"),
@@ -95,13 +95,7 @@ describe("EdgeWorker - Runner Selection Based on Labels", () => {
 	let mockGeminiRunner: any;
 	let mockOpenCodeRunner: any;
 	let mockAgentSessionManager: any;
-	let capturedRunnerType:
-		| "claude"
-		| "gemini"
-		| "codex"
-		| "cursor"
-		| "opencode"
-		| null = null;
+	let capturedRunnerType: "claude" | "opencode" | null = null;
 	let capturedRunnerConfig: any = null;
 
 	const mockRepository: RepositoryConfig = {
@@ -357,8 +351,8 @@ Issue: {{issue_identifier}}`;
 		mock.restore();
 	});
 
-	describe("Gemini Runner Selection", () => {
-		it("should select Gemini runner when 'gemini' label is present", async () => {
+	describe("Disabled Runner Fallback: Gemini labels", () => {
+		it("should fall back to OpenCode when 'gemini' label is present (runner disabled)", async () => {
 			// Arrange
 			const mockIssue = createMockIssueWithLabels(["gemini"]);
 			mockLinearClient.issue.mockResolvedValue(mockIssue);
@@ -384,11 +378,11 @@ Issue: {{issue_identifier}}`;
 			]);
 
 			// Assert
-			expect(capturedRunnerType).toBe("gemini");
-			expect(GeminiRunner).toHaveBeenCalled();
+			expect(capturedRunnerType).toBe("opencode");
+			expect(OpenCodeRunner).toHaveBeenCalled();
 		});
 
-		it("should select Gemini runner with gemini-2.5-pro model when 'gemini-2.5-pro' label is present", async () => {
+		it("should fall back to OpenCode with gemini-2.5-pro label (runner disabled)", async () => {
 			// Arrange
 			const mockIssue = createMockIssueWithLabels(["gemini-2.5-pro"]);
 			mockLinearClient.issue.mockResolvedValue(mockIssue);
@@ -414,12 +408,11 @@ Issue: {{issue_identifier}}`;
 			]);
 
 			// Assert
-			expect(capturedRunnerType).toBe("gemini");
-			expect(GeminiRunner).toHaveBeenCalled();
-			expect(capturedRunnerConfig.model).toBe("gemini-2.5-pro");
+			expect(capturedRunnerType).toBe("opencode");
+			expect(OpenCodeRunner).toHaveBeenCalled();
 		});
 
-		it("should select Gemini runner when 'gemini-2.5-flash' label is present", async () => {
+		it("should fall back to OpenCode when 'gemini-2.5-flash' label is present (runner disabled)", async () => {
 			// Arrange
 			const mockIssue = createMockIssueWithLabels(["gemini-2.5-flash"]);
 			mockLinearClient.issue.mockResolvedValue(mockIssue);
@@ -445,11 +438,11 @@ Issue: {{issue_identifier}}`;
 			]);
 
 			// Assert
-			expect(capturedRunnerType).toBe("gemini");
-			expect(GeminiRunner).toHaveBeenCalled();
+			expect(capturedRunnerType).toBe("opencode");
+			expect(OpenCodeRunner).toHaveBeenCalled();
 		});
 
-		it("should select Gemini runner when 'gemini-3-pro' label is present", async () => {
+		it("should fall back to OpenCode when 'gemini-3-pro' label is present (runner disabled)", async () => {
 			// Arrange
 			const mockIssue = createMockIssueWithLabels(["gemini-3-pro"]);
 			mockLinearClient.issue.mockResolvedValue(mockIssue);
@@ -475,14 +468,13 @@ Issue: {{issue_identifier}}`;
 			]);
 
 			// Assert
-			expect(capturedRunnerType).toBe("gemini");
-			expect(GeminiRunner).toHaveBeenCalled();
-			expect(capturedRunnerConfig.model).toBe("gemini-3-pro-preview");
+			expect(capturedRunnerType).toBe("opencode");
+			expect(OpenCodeRunner).toHaveBeenCalled();
 		});
 	});
 
-	describe("Codex Runner Selection", () => {
-		it("should select Codex runner when 'codex' label is present", async () => {
+	describe("Disabled Runner Fallback: Codex labels", () => {
+		it("should fall back to OpenCode when 'codex' label is present (runner disabled)", async () => {
 			const mockIssue = createMockIssueWithLabels(["codex"]);
 			mockLinearClient.issue.mockResolvedValue(mockIssue);
 
@@ -505,11 +497,11 @@ Issue: {{issue_identifier}}`;
 				mockRepository,
 			]);
 
-			expect(capturedRunnerType).toBe("codex");
-			expect(CodexRunner).toHaveBeenCalled();
+			expect(capturedRunnerType).toBe("opencode");
+			expect(OpenCodeRunner).toHaveBeenCalled();
 		});
 
-		it("should select Codex runner with gpt-5-codex model when 'gpt-5-codex' label is present", async () => {
+		it("should fall back to OpenCode with gpt-5-codex label (runner disabled)", async () => {
 			const mockIssue = createMockIssueWithLabels(["gpt-5-codex"]);
 			mockLinearClient.issue.mockResolvedValue(mockIssue);
 
@@ -532,12 +524,11 @@ Issue: {{issue_identifier}}`;
 				mockRepository,
 			]);
 
-			expect(capturedRunnerType).toBe("codex");
-			expect(CodexRunner).toHaveBeenCalled();
-			expect(capturedRunnerConfig.model).toBe("gpt-5-codex");
+			expect(capturedRunnerType).toBe("opencode");
+			expect(OpenCodeRunner).toHaveBeenCalled();
 		});
 
-		it("should select Codex runner with gpt-5.2-codex model when both agent and model labels are present", async () => {
+		it("should fall back to OpenCode with gpt-5.2-codex label (runner disabled)", async () => {
 			const mockIssue = createMockIssueWithLabels(["codex", "gpt-5.2-codex"]);
 			mockLinearClient.issue.mockResolvedValue(mockIssue);
 
@@ -560,14 +551,13 @@ Issue: {{issue_identifier}}`;
 				mockRepository,
 			]);
 
-			expect(capturedRunnerType).toBe("codex");
-			expect(CodexRunner).toHaveBeenCalled();
-			expect(capturedRunnerConfig.model).toBe("gpt-5.2-codex");
+			expect(capturedRunnerType).toBe("opencode");
+			expect(OpenCodeRunner).toHaveBeenCalled();
 		});
 	});
 
-	describe("Cursor Runner Selection", () => {
-		it("should select Cursor runner when 'cursor' label is present", async () => {
+	describe("Disabled Runner Fallback: Cursor labels", () => {
+		it("should fall back to OpenCode when 'cursor' label is present (runner disabled)", async () => {
 			const mockIssue = createMockIssueWithLabels(["cursor"]);
 			mockLinearClient.issue.mockResolvedValue(mockIssue);
 
@@ -590,8 +580,8 @@ Issue: {{issue_identifier}}`;
 				mockRepository,
 			]);
 
-			expect(capturedRunnerType).toBe("cursor");
-			expect(CursorRunner).toHaveBeenCalled();
+			expect(capturedRunnerType).toBe("opencode");
+			expect(OpenCodeRunner).toHaveBeenCalled();
 		});
 	});
 
@@ -622,8 +612,8 @@ Issue: {{issue_identifier}}`;
 				mockRepository,
 			]);
 
-			expect(capturedRunnerType).toBe("codex");
-			expect(CodexRunner).toHaveBeenCalled();
+			expect(capturedRunnerType).toBe("opencode");
+			expect(OpenCodeRunner).toHaveBeenCalled();
 		});
 
 		it("should select Cursor runner from [agent=cursor] description tag", async () => {
@@ -652,8 +642,8 @@ Issue: {{issue_identifier}}`;
 				mockRepository,
 			]);
 
-			expect(capturedRunnerType).toBe("cursor");
-			expect(CursorRunner).toHaveBeenCalled();
+			expect(capturedRunnerType).toBe("opencode");
+			expect(OpenCodeRunner).toHaveBeenCalled();
 		});
 
 		it("should select model from [model=...] description tag and infer runner", async () => {
@@ -682,19 +672,17 @@ Issue: {{issue_identifier}}`;
 				mockRepository,
 			]);
 
-			expect(capturedRunnerType).toBe("codex");
-			expect(CodexRunner).toHaveBeenCalled();
-			expect(capturedRunnerConfig.model).toBe("gpt-5.2-codex");
+			expect(capturedRunnerType).toBe("opencode");
+			expect(OpenCodeRunner).toHaveBeenCalled();
 		});
 
-		it("should let description tags override labels", async () => {
+		it("should fall back to label-based selection when description tag specifies disabled runner", async () => {
 			const mockIssue = createMockIssueWithLabels(
 				["claude", "sonnet"],
 				"Work item\\n\\n[agent=gemini]\\n[model=gemini-2.5-flash]",
 			);
 			mockLinearClient.issue.mockResolvedValue(mockIssue);
-
-			const webhook: LinearAgentSessionCreatedWebhook = {
+			const webhook = {
 				type: "Issue",
 				action: "agentSessionCreated",
 				organizationId: "test-workspace",
@@ -708,14 +696,13 @@ Issue: {{issue_identifier}}`;
 					comment: { body: "@sylas work on this" },
 				},
 			};
-
 			await (edgeWorker as any).handleAgentSessionCreatedWebhook(webhook, [
 				mockRepository,
 			]);
 
-			expect(capturedRunnerType).toBe("gemini");
-			expect(GeminiRunner).toHaveBeenCalled();
-			expect(capturedRunnerConfig.model).toBe("gemini-2.5-flash");
+			// [agent=gemini] is unrecognized (disabled) — falls through to labels which have 'claude'
+			expect(capturedRunnerType).toBe("claude");
+			expect(ClaudeRunner).toHaveBeenCalled();
 		});
 	});
 
@@ -880,7 +867,7 @@ Issue: {{issue_identifier}}`;
 	});
 
 	describe("Case Insensitivity", () => {
-		it("should select Gemini runner with mixed-case 'Gemini' label", async () => {
+		it("should fall back to OpenCode with mixed-case 'Gemini' label (runner disabled)", async () => {
 			// Arrange
 			const mockIssue = createMockIssueWithLabels(["Gemini"]);
 			mockLinearClient.issue.mockResolvedValue(mockIssue);
@@ -906,8 +893,8 @@ Issue: {{issue_identifier}}`;
 			]);
 
 			// Assert
-			expect(capturedRunnerType).toBe("gemini");
-			expect(GeminiRunner).toHaveBeenCalled();
+			expect(capturedRunnerType).toBe("opencode");
+			expect(OpenCodeRunner).toHaveBeenCalled();
 		});
 
 		it("should select Claude runner with uppercase 'CLAUDE' label", async () => {
@@ -969,8 +956,7 @@ Issue: {{issue_identifier}}`;
 			);
 
 			// Assert
-			expect(runnerSelection.runnerType).toBe("gemini");
-			expect(runnerSelection.modelOverride).toBe("gemini-3-pro-preview");
+			expect(runnerSelection.runnerType).toBe("opencode");
 
 			// The validation logic will allow this since both label and session use gemini
 		});
@@ -1007,7 +993,7 @@ Issue: {{issue_identifier}}`;
 	});
 
 	describe("Session Continuation", () => {
-		it("should pass cursorSessionId as resumeSessionId for cursor continuations", async () => {
+		it("should start new opencode session when cursor session exists but cursor runner is disabled", async () => {
 			const mockIssue = createMockIssueWithLabels(["cursor"]);
 			spyOn(edgeWorker as any, "fetchFullIssueDetails").mockResolvedValue(
 				mockIssue,
@@ -1018,14 +1004,12 @@ Issue: {{issue_identifier}}`;
 			spyOn(edgeWorker as any, "savePersistedState").mockResolvedValue(
 				undefined,
 			);
-
 			const session: any = {
 				issueId: "issue-123",
 				workspace: { path: "/test/workspaces/TEST-123" },
 				issue: { identifier: "TEST-123" },
 				cursorSessionId: "cursor-session-existing",
 			};
-
 			await (edgeWorker as any).resumeAgentSession(
 				session,
 				mockRepository,
@@ -1034,11 +1018,10 @@ Issue: {{issue_identifier}}`;
 				"follow-up prompt",
 			);
 
-			expect(capturedRunnerType).toBe("cursor");
-			expect(capturedRunnerConfig.resumeSessionId).toBe(
-				"cursor-session-existing",
-			);
-			expect(mockCursorRunner.start).toHaveBeenCalledOnce();
+			// Cursor runner is disabled — falls back to opencode, no session resume possible
+			expect(capturedRunnerType).toBe("opencode");
+			expect(capturedRunnerConfig.resumeSessionId).toBeUndefined();
+			expect(mockOpenCodeRunner.startStreaming).toHaveBeenCalledOnce();
 		});
 	});
 });

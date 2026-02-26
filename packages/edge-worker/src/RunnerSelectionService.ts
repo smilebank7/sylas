@@ -1,9 +1,4 @@
-import type {
-	EdgeWorkerConfig,
-	ILogger,
-	RepositoryConfig,
-	SylasAgentSession,
-} from "sylas-core";
+import type { EdgeWorkerConfig, ILogger, RepositoryConfig } from "sylas-core";
 import {
 	getAllTools,
 	getCoordinatorTools,
@@ -11,12 +6,11 @@ import {
 	getSafeTools,
 } from "sylas-core";
 
-import type { ProcedureAnalyzer } from "./procedures/index.js";
-
 const LEGACY_AGENT_ALIASES = {
 	opencode: String.fromCharCode(111, 109, 111),
 	claude: String.fromCharCode(111, 109, 99),
-	codex: String.fromCharCode(111, 109, 120),
+	// TEMPORARILY DISABLED: runner consolidation v2
+	// codex: String.fromCharCode(111, 109, 120),
 } as const;
 
 export class RunnerSelectionService {
@@ -31,9 +25,7 @@ export class RunnerSelectionService {
 	/**
 	 * Resolve default model for a given runner from config with sensible built-in defaults.
 	 */
-	public getDefaultModelForRunner(
-		runnerType: "claude" | "gemini" | "codex" | "cursor" | "opencode",
-	): string {
+	public getDefaultModelForRunner(runnerType: "opencode" | "claude"): string {
 		const compatConfig = this.config as EdgeWorkerConfig & {
 			claudeDefaultModel?: string;
 			openCodeDefaultModel?: string;
@@ -45,12 +37,14 @@ export class RunnerSelectionService {
 				compatConfig.claudeDefaultModel || this.config.defaultModel || "opus"
 			);
 		}
-		if (runnerType === "gemini") {
-			return this.config.geminiDefaultModel || "gemini-2.5-pro";
-		}
-		if (runnerType === "cursor") {
-			return "gpt-5";
-		}
+		// TEMPORARILY DISABLED: runner consolidation v2
+		// if (runnerType === "gemini") {
+		// 	return this.config.geminiDefaultModel || "gemini-2.5-pro";
+		// }
+		// TEMPORARILY DISABLED: runner consolidation v2
+		// if (runnerType === "cursor") {
+		// 	return "gpt-5";
+		// }
 		if (runnerType === "opencode") {
 			return (
 				compatConfig.openCodeDefaultModel ||
@@ -58,7 +52,13 @@ export class RunnerSelectionService {
 				"anthropic/claude-sonnet-4-20250514"
 			);
 		}
-		return compatConfig.codexDefaultModel || "gpt-5.3-codex";
+		// TEMPORARILY DISABLED: runner consolidation v2
+		// return compatConfig.codexDefaultModel || "gpt-5.3-codex";
+		return (
+			compatConfig.openCodeDefaultModel ||
+			this.config.defaultModel ||
+			"anthropic/claude-sonnet-4-20250514"
+		);
 	}
 
 	/**
@@ -66,7 +66,7 @@ export class RunnerSelectionService {
 	 * Supports legacy Claude fallback key for backwards compatibility.
 	 */
 	public getDefaultFallbackModelForRunner(
-		runnerType: "claude" | "gemini" | "codex" | "cursor" | "opencode",
+		runnerType: "opencode" | "claude",
 	): string {
 		const compatConfig = this.config as EdgeWorkerConfig & {
 			claudeDefaultModel?: string;
@@ -81,12 +81,14 @@ export class RunnerSelectionService {
 				"sonnet"
 			);
 		}
-		if (runnerType === "gemini") {
-			return "gemini-2.5-flash";
-		}
-		if (runnerType === "cursor") {
-			return "gpt-5";
-		}
+		// TEMPORARILY DISABLED: runner consolidation v2
+		// if (runnerType === "gemini") {
+		// 	return "gemini-2.5-flash";
+		// }
+		// TEMPORARILY DISABLED: runner consolidation v2
+		// if (runnerType === "cursor") {
+		// 	return "gpt-5";
+		// }
 		if (runnerType === "opencode") {
 			return (
 				compatConfig.openCodeDefaultModel ||
@@ -94,7 +96,13 @@ export class RunnerSelectionService {
 				"anthropic/claude-sonnet-4-20250514"
 			);
 		}
-		return "gpt-5";
+		// TEMPORARILY DISABLED: runner consolidation v2
+		// return "gpt-5";
+		return (
+			compatConfig.openCodeDefaultModel ||
+			this.config.defaultFallbackModel ||
+			"anthropic/claude-sonnet-4-20250514"
+		);
 	}
 
 	/**
@@ -119,7 +127,7 @@ export class RunnerSelectionService {
 	 * Determine runner type and model using labels + issue description tags.
 	 *
 	 * Supported description tags:
-	 * - [agent=claude|gemini|codex|cursor|opencode]
+	 * - [agent=claude|opencode]
 	 * - [model=<model-name>]
 	 *
 	 * Precedence:
@@ -132,7 +140,7 @@ export class RunnerSelectionService {
 		labels: string[],
 		issueDescription?: string,
 	): {
-		runnerType: "claude" | "gemini" | "codex" | "cursor" | "opencode";
+		runnerType: "opencode" | "claude";
 		modelOverride?: string;
 		fallbackModelOverride?: string;
 	} {
@@ -147,36 +155,36 @@ export class RunnerSelectionService {
 			"model",
 		);
 
-		const defaultModelByRunner: Record<
-			"claude" | "gemini" | "codex" | "cursor" | "opencode",
-			string
-		> = {
+		const defaultModelByRunner: Record<"opencode" | "claude", string> = {
 			claude: this.getDefaultModelForRunner("claude"),
-			gemini: this.getDefaultModelForRunner("gemini"),
-			codex: this.getDefaultModelForRunner("codex"),
-			cursor: this.getDefaultModelForRunner("cursor"),
 			opencode: this.getDefaultModelForRunner("opencode"),
+			// TEMPORARILY DISABLED: runner consolidation v2
+			// gemini: this.getDefaultModelForRunner("gemini"),
+			// TEMPORARILY DISABLED: runner consolidation v2
+			// codex: this.getDefaultModelForRunner("codex"),
+			// TEMPORARILY DISABLED: runner consolidation v2
+			// cursor: this.getDefaultModelForRunner("cursor"),
 		};
-		const defaultFallbackByRunner: Record<
-			"claude" | "gemini" | "codex" | "cursor" | "opencode",
-			string
-		> = {
+		const defaultFallbackByRunner: Record<"opencode" | "claude", string> = {
 			claude: this.getDefaultFallbackModelForRunner("claude"),
-			gemini: this.getDefaultFallbackModelForRunner("gemini"),
-			codex: this.getDefaultFallbackModelForRunner("codex"),
-			cursor: this.getDefaultFallbackModelForRunner("cursor"),
 			opencode: this.getDefaultFallbackModelForRunner("opencode"),
+			// TEMPORARILY DISABLED: runner consolidation v2
+			// gemini: this.getDefaultFallbackModelForRunner("gemini"),
+			// TEMPORARILY DISABLED: runner consolidation v2
+			// codex: this.getDefaultFallbackModelForRunner("codex"),
+			// TEMPORARILY DISABLED: runner consolidation v2
+			// cursor: this.getDefaultFallbackModelForRunner("cursor"),
 		};
 
-		const isCodexModel = (model: string): boolean =>
-			/gpt-[a-z0-9.-]*codex$/i.test(model) || /^gpt-[a-z0-9.-]+$/i.test(model);
+		// TEMPORARILY DISABLED: runner consolidation v2
+		// const isCodexModel = (model: string): boolean =>
+		// 	/gpt-[a-z0-9.-]*codex$/i.test(model) || /^gpt-[a-z0-9.-]+$/i.test(model);
 
-		const inferRunnerFromModel = (
-			model?: string,
-		): "claude" | "gemini" | "codex" | "cursor" | "opencode" | undefined => {
+		const inferRunnerFromModel = (model?: string): "claude" | undefined => {
 			if (!model) return undefined;
 			const normalizedModel = model.toLowerCase();
-			if (normalizedModel.startsWith("gemini")) return "gemini";
+			// TEMPORARILY DISABLED: runner consolidation v2
+			// if (normalizedModel.startsWith("gemini")) return "gemini";
 			if (
 				normalizedModel === "opus" ||
 				normalizedModel === "sonnet" ||
@@ -185,13 +193,14 @@ export class RunnerSelectionService {
 			) {
 				return "claude";
 			}
-			if (isCodexModel(normalizedModel)) return "codex";
+			// TEMPORARILY DISABLED: runner consolidation v2
+			// if (isCodexModel(normalizedModel)) return "codex";
 			return undefined;
 		};
 
 		const inferFallbackModel = (
 			model: string,
-			runnerType: "claude" | "gemini" | "codex" | "cursor" | "opencode",
+			runnerType: "opencode" | "claude",
 		): string | undefined => {
 			const normalizedModel = model.toLowerCase();
 			if (runnerType === "claude") {
@@ -201,58 +210,63 @@ export class RunnerSelectionService {
 				if (normalizedModel === "haiku") return "sonnet";
 				return "sonnet";
 			}
-			if (runnerType === "gemini") {
-				if (
-					normalizedModel === "gemini-3" ||
-					normalizedModel === "gemini-3-pro" ||
-					normalizedModel === "gemini-3-pro-preview"
-				) {
-					return "gemini-2.5-pro";
-				}
-				if (
-					normalizedModel === "gemini-2.5-pro" ||
-					normalizedModel === "gemini-2.5"
-				) {
-					return "gemini-2.5-flash";
-				}
-				if (normalizedModel === "gemini-2.5-flash") {
-					return "gemini-2.5-flash-lite";
-				}
-				if (normalizedModel === "gemini-2.5-flash-lite") {
-					return "gemini-2.5-flash-lite";
-				}
-				return "gemini-2.5-flash";
-			}
-			if (isCodexModel(normalizedModel)) {
-				if (normalizedModel.endsWith("-codex")) {
-					return model.slice(0, -"-codex".length);
-				}
-				return "gpt-5";
-			}
-			return "gpt-5";
+			// TEMPORARILY DISABLED: runner consolidation v2
+			// if (runnerType === "gemini") {
+			// 	if (
+			// 		normalizedModel === "gemini-3" ||
+			// 		normalizedModel === "gemini-3-pro" ||
+			// 		normalizedModel === "gemini-3-pro-preview"
+			// 	) {
+			// 		return "gemini-2.5-pro";
+			// 	}
+			// 	if (
+			// 		normalizedModel === "gemini-2.5-pro" ||
+			// 		normalizedModel === "gemini-2.5"
+			// 	) {
+			// 		return "gemini-2.5-flash";
+			// 	}
+			// 	if (normalizedModel === "gemini-2.5-flash") {
+			// 		return "gemini-2.5-flash-lite";
+			// 	}
+			// 	if (normalizedModel === "gemini-2.5-flash-lite") {
+			// 		return "gemini-2.5-flash-lite";
+			// 	}
+			// 	return "gemini-2.5-flash";
+			// }
+			// TEMPORARILY DISABLED: runner consolidation v2
+			// if (isCodexModel(normalizedModel)) {
+			// 	if (normalizedModel.endsWith("-codex")) {
+			// 		return model.slice(0, -"-codex".length);
+			// 	}
+			// 	return "gpt-5";
+			// }
+			return defaultFallbackByRunner.opencode;
 		};
 
 		const resolveAgentFromLabel = (
 			lowercaseLabels: string[],
-		): "claude" | "gemini" | "codex" | "cursor" | "opencode" | undefined => {
+		): "opencode" | "claude" | undefined => {
 			if (
 				lowercaseLabels.includes("opencode") ||
 				lowercaseLabels.includes(LEGACY_AGENT_ALIASES.opencode)
 			) {
 				return "opencode";
 			}
+			// TEMPORARILY DISABLED: runner consolidation v2 - fall back to opencode
 			if (lowercaseLabels.includes("cursor")) {
-				return "cursor";
+				return "opencode";
 			}
+			// TEMPORARILY DISABLED: runner consolidation v2 - fall back to opencode
 			if (
 				lowercaseLabels.includes("codex") ||
-				lowercaseLabels.includes(LEGACY_AGENT_ALIASES.codex) ||
+				// lowercaseLabels.includes(LEGACY_AGENT_ALIASES.codex) ||
 				lowercaseLabels.includes("openai")
 			) {
-				return "codex";
+				return "opencode";
 			}
+			// TEMPORARILY DISABLED: runner consolidation v2 - fall back to opencode
 			if (lowercaseLabels.includes("gemini")) {
-				return "gemini";
+				return "opencode";
 			}
 			if (
 				lowercaseLabels.includes("claude") ||
@@ -267,32 +281,33 @@ export class RunnerSelectionService {
 		const resolveModelFromLabel = (
 			lowercaseLabels: string[],
 		): string | undefined => {
-			const codexModelLabel = lowercaseLabels.find((label) =>
-				/gpt-[a-z0-9.-]*codex$/i.test(label),
-			);
-			if (codexModelLabel) {
-				return codexModelLabel;
-			}
-
-			if (
-				lowercaseLabels.includes("gemini-2.5-pro") ||
-				lowercaseLabels.includes("gemini-2.5")
-			) {
-				return "gemini-2.5-pro";
-			}
-			if (lowercaseLabels.includes("gemini-2.5-flash")) {
-				return "gemini-2.5-flash";
-			}
-			if (lowercaseLabels.includes("gemini-2.5-flash-lite")) {
-				return "gemini-2.5-flash-lite";
-			}
-			if (
-				lowercaseLabels.includes("gemini-3") ||
-				lowercaseLabels.includes("gemini-3-pro") ||
-				lowercaseLabels.includes("gemini-3-pro-preview")
-			) {
-				return "gemini-3-pro-preview";
-			}
+			// TEMPORARILY DISABLED: runner consolidation v2
+			// const codexModelLabel = lowercaseLabels.find((label) =>
+			// 	/gpt-[a-z0-9.-]*codex$/i.test(label),
+			// );
+			// if (codexModelLabel) {
+			// 	return codexModelLabel;
+			// }
+			// TEMPORARILY DISABLED: runner consolidation v2
+			// if (
+			// 	lowercaseLabels.includes("gemini-2.5-pro") ||
+			// 	lowercaseLabels.includes("gemini-2.5")
+			// ) {
+			// 	return "gemini-2.5-pro";
+			// }
+			// if (lowercaseLabels.includes("gemini-2.5-flash")) {
+			// 	return "gemini-2.5-flash";
+			// }
+			// if (lowercaseLabels.includes("gemini-2.5-flash-lite")) {
+			// 	return "gemini-2.5-flash-lite";
+			// }
+			// if (
+			// 	lowercaseLabels.includes("gemini-3") ||
+			// 	lowercaseLabels.includes("gemini-3-pro") ||
+			// 	lowercaseLabels.includes("gemini-3-pro-preview")
+			// ) {
+			// 	return "gemini-3-pro-preview";
+			// }
 
 			if (lowercaseLabels.includes("opus")) return "opus";
 			if (lowercaseLabels.includes("sonnet")) return "sonnet";
@@ -302,29 +317,43 @@ export class RunnerSelectionService {
 		};
 
 		const agentFromDescription = descriptionAgentTagRaw?.toLowerCase();
+		// Check if description specifies a disabled runner
+		const isDisabledRunner = (agent: string | undefined): boolean => {
+			if (!agent) return false;
+			return (
+				agent === "gemini" ||
+				agent === "codex" ||
+				agent === "cursor" ||
+				agent === "openai"
+			);
+		};
 		const resolvedAgentFromDescription =
 			agentFromDescription === "opencode" ||
 			agentFromDescription === LEGACY_AGENT_ALIASES.opencode
 				? "opencode"
-				: agentFromDescription === "cursor"
-					? "cursor"
-					: agentFromDescription === "codex" ||
-							agentFromDescription === LEGACY_AGENT_ALIASES.codex ||
-							agentFromDescription === "openai"
-						? "codex"
-						: agentFromDescription === "gemini"
-							? "gemini"
-							: agentFromDescription === "claude" ||
-									agentFromDescription === LEGACY_AGENT_ALIASES.claude
-								? "claude"
-								: undefined;
+				: agentFromDescription === "claude" ||
+						agentFromDescription === LEGACY_AGENT_ALIASES.claude
+					? "claude"
+					: isDisabledRunner(agentFromDescription)
+						? undefined // Disabled runners don't override labels, fall through to label-based selection
+						: undefined;
+		// TEMPORARILY DISABLED: runner consolidation v2
+		// : agentFromDescription === "cursor"
+		// 	? "cursor"
+		// 	: agentFromDescription === "codex" ||
+		// 			agentFromDescription === LEGACY_AGENT_ALIASES.codex ||
+		// 			agentFromDescription === "openai"
+		// 		? "codex"
+		// 		: agentFromDescription === "gemini"
+		// 			? "gemini"
+		// 			: undefined;
 		const resolvedAgentFromLabels = resolveAgentFromLabel(normalizedLabels);
 
 		const modelFromDescription = descriptionModelTagRaw;
 		const modelFromLabels = resolveModelFromLabel(normalizedLabels);
 		const explicitModel = modelFromDescription || modelFromLabels;
 
-		const runnerType: "claude" | "gemini" | "codex" | "cursor" | "opencode" =
+		const runnerType: "opencode" | "claude" =
 			resolvedAgentFromDescription ||
 			resolvedAgentFromLabels ||
 			inferRunnerFromModel(explicitModel) ||
@@ -512,36 +541,5 @@ export class RunnerSelectionService {
 		}
 
 		return disallowedTools;
-	}
-
-	/**
-	 * Merge subroutine-level disallowedTools with base disallowedTools
-	 * @param session Current agent session
-	 * @param baseDisallowedTools Base disallowed tools from repository/global config
-	 * @param logContext Context string for logging (e.g., "EdgeWorker", "resumeClaudeSession")
-	 * @param procedureAnalyzer ProcedureAnalyzer instance to resolve current subroutine
-	 * @returns Merged disallowed tools list
-	 */
-	public mergeSubroutineDisallowedTools(
-		session: SylasAgentSession,
-		baseDisallowedTools: string[],
-		logContext: string,
-		procedureAnalyzer: ProcedureAnalyzer,
-	): string[] {
-		const currentSubroutine = procedureAnalyzer.getCurrentSubroutine(session);
-		if (currentSubroutine?.disallowedTools) {
-			const mergedTools = [
-				...new Set([
-					...baseDisallowedTools,
-					...currentSubroutine.disallowedTools,
-				]),
-			];
-			this.logger.debug(
-				`[${logContext}] Merged subroutine-level disallowedTools for ${currentSubroutine.name}:`,
-				currentSubroutine.disallowedTools,
-			);
-			return mergedTools;
-		}
-		return baseDisallowedTools;
 	}
 }

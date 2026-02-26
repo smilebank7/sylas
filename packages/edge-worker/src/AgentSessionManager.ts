@@ -20,66 +20,11 @@ import {
 	type SylasAgentSessionEntry,
 	type Workspace,
 } from "sylas-core";
-import type { ProcedureAnalyzer } from "./procedures/ProcedureAnalyzer.js";
-import type { ValidationLoopMetadata } from "./procedures/types.js";
-import type { SharedApplicationServer } from "./SharedApplicationServer.js";
 import type {
 	ActivityPostOptions,
 	ActivitySignal,
 	IActivitySink,
 } from "./sinks/index.js";
-import {
-	DEFAULT_VALIDATION_LOOP_CONFIG,
-	parseValidationResult,
-	renderValidationFixerPrompt,
-} from "./validation/index.js";
-
-/**
- * Events emitted by AgentSessionManager
- */
-export interface AgentSessionManagerEvents {
-	subroutineComplete: (data: {
-		sessionId: string;
-		session: SylasAgentSession;
-	}) => void;
-	/**
-	 * Emitted when validation fails and we need to run the validation-fixer
-	 * The EdgeWorker should respond by running the fixer prompt and then re-running verifications
-	 */
-	validationLoopIteration: (data: {
-		sessionId: string;
-		session: SylasAgentSession;
-		/** The fixer prompt to run (already rendered with failure context) */
-		fixerPrompt: string;
-		/** Current iteration (1-based) */
-		iteration: number;
-		/** Maximum iterations allowed */
-		maxIterations: number;
-	}) => void;
-	/**
-	 * Emitted when we need to re-run the verifications subroutine
-	 */
-	validationLoopRerun: (data: {
-		sessionId: string;
-		session: SylasAgentSession;
-		/** Current iteration (1-based) */
-		iteration: number;
-	}) => void;
-}
-
-/**
- * Type-safe event emitter interface for AgentSessionManager
- */
-export declare interface AgentSessionManager {
-	on<K extends keyof AgentSessionManagerEvents>(
-		event: K,
-		listener: AgentSessionManagerEvents[K],
-	): this;
-	emit<K extends keyof AgentSessionManagerEvents>(
-		event: K,
-		...args: Parameters<AgentSessionManagerEvents[K]>
-	): boolean;
-}
 
 /**
  * Manages Agent Sessions integration with Claude Code SDK
@@ -100,8 +45,6 @@ export class AgentSessionManager extends EventEmitter {
 	private taskSubjectsById: Map<string, string> = new Map(); // Cache task subjects by task ID (e.g., "1" → "Fix login bug")
 	private activeStatusActivitiesBySession: Map<string, string> = new Map(); // Maps session ID to active compacting status activity ID
 	private stopRequestedSessions: Set<string> = new Set(); // Sessions explicitly stopped by user signal
-	private procedureAnalyzer?: ProcedureAnalyzer;
-	private sharedApplicationServer?: SharedApplicationServer;
 	private getParentSessionId?: (childSessionId: string) => string | undefined;
 	private resumeParentSession?: (
 		parentSessionId: string,
@@ -117,8 +60,6 @@ export class AgentSessionManager extends EventEmitter {
 			prompt: string,
 			childSessionId: string,
 		) => Promise<void>,
-		procedureAnalyzer?: ProcedureAnalyzer,
-		sharedApplicationServer?: SharedApplicationServer,
 		logger?: ILogger,
 	) {
 		super();
@@ -126,8 +67,6 @@ export class AgentSessionManager extends EventEmitter {
 		this.activitySink = activitySink;
 		this.getParentSessionId = getParentSessionId;
 		this.resumeParentSession = resumeParentSession;
-		this.procedureAnalyzer = procedureAnalyzer;
-		this.sharedApplicationServer = sharedApplicationServer;
 	}
 
 	/**
@@ -245,26 +184,30 @@ export class AgentSessionManager extends EventEmitter {
 		const runnerType =
 			runner?.constructor.name === "OpenCodeRunner"
 				? "opencode"
-				: runner?.constructor.name === "GeminiRunner"
-					? "gemini"
-					: runner?.constructor.name === "CodexRunner"
-						? "codex"
-						: runner?.constructor.name === "CursorRunner"
-							? "cursor"
-							: "claude";
+				: runner?.constructor.name === "CodexRunner"
+					? "codex"
+					: "claude";
+		// TEMPORARILY DISABLED: runner consolidation v2
+		// : runner?.constructor.name === "GeminiRunner"
+		// 	? "gemini"
+		// 	: runner?.constructor.name === "CursorRunner"
+		// 		? "cursor"
+		// 		: "claude";
 
 		// Update the appropriate session ID based on runner type
 		if (runnerType === "opencode") {
 			linearSession.openCodeSessionId = claudeSystemMessage.session_id;
-		} else if (runnerType === "gemini") {
-			linearSession.geminiSessionId = claudeSystemMessage.session_id;
 		} else if (runnerType === "codex") {
 			linearSession.codexSessionId = claudeSystemMessage.session_id;
-		} else if (runnerType === "cursor") {
-			linearSession.cursorSessionId = claudeSystemMessage.session_id;
 		} else {
 			linearSession.claudeSessionId = claudeSystemMessage.session_id;
 		}
+		// TEMPORARILY DISABLED: runner consolidation v2
+		// } else if (runnerType === "gemini") {
+		// 	linearSession.geminiSessionId = claudeSystemMessage.session_id;
+		// } else if (runnerType === "cursor") {
+		// 	linearSession.cursorSessionId = claudeSystemMessage.session_id;
+		// }
 
 		linearSession.updatedAt = Date.now();
 		linearSession.metadata = {
@@ -305,25 +248,29 @@ export class AgentSessionManager extends EventEmitter {
 		const runnerType =
 			runner?.constructor.name === "OpenCodeRunner"
 				? "opencode"
-				: runner?.constructor.name === "GeminiRunner"
-					? "gemini"
-					: runner?.constructor.name === "CodexRunner"
-						? "codex"
-						: runner?.constructor.name === "CursorRunner"
-							? "cursor"
-							: "claude";
+				: runner?.constructor.name === "CodexRunner"
+					? "codex"
+					: "claude";
+		// TEMPORARILY DISABLED: runner consolidation v2
+		// : runner?.constructor.name === "GeminiRunner"
+		// 	? "gemini"
+		// 	: runner?.constructor.name === "CursorRunner"
+		// 		? "cursor"
+		// 		: "claude";
 
 		const sessionEntry: SylasAgentSessionEntry = {
 			// Set the appropriate session ID based on runner type
 			...(runnerType === "opencode"
 				? { openCodeSessionId: sdkMessage.session_id }
-				: runnerType === "gemini"
-					? { geminiSessionId: sdkMessage.session_id }
-					: runnerType === "codex"
-						? { codexSessionId: sdkMessage.session_id }
-						: runnerType === "cursor"
-							? { cursorSessionId: sdkMessage.session_id }
-							: { claudeSessionId: sdkMessage.session_id }),
+				: runnerType === "codex"
+					? { codexSessionId: sdkMessage.session_id }
+					: { claudeSessionId: sdkMessage.session_id }),
+			// TEMPORARILY DISABLED: runner consolidation v2
+			// : runnerType === "gemini"
+			// 	? { geminiSessionId: sdkMessage.session_id }
+			// 	: runnerType === "cursor"
+			// 		? { cursorSessionId: sdkMessage.session_id }
+			// 		: { claudeSessionId: sdkMessage.session_id }),
 			type: sdkMessage.type,
 			content: this.extractContent(sdkMessage),
 			metadata: {
@@ -382,81 +329,26 @@ export class AgentSessionManager extends EventEmitter {
 			usage: resultMessage.usage,
 		});
 
-		// Handle result using procedure routing system (skip for sessions without procedures, e.g. Slack)
-		if (!this.procedureAnalyzer) {
-			log.info(`Session completed (no procedure routing)`);
-			return;
-		}
-
 		if (wasStopRequested) {
-			log.info(
-				`Session ${sessionId} was stopped by user; skipping procedure continuation`,
-			);
+			log.info(`Session ${sessionId} was stopped by user`);
 			return;
 		}
 
-		if ("result" in resultMessage && resultMessage.result) {
-			await this.handleProcedureCompletion(session, sessionId, resultMessage);
-		} else if (
-			resultMessage.subtype !== "success" &&
-			this.shouldRecoverFromPreviousSubroutine(resultMessage)
+		if (
+			("result" in resultMessage && Boolean(resultMessage.result)) ||
+			resultMessage.subtype !== "success"
 		) {
-			// Error result (e.g. error_max_turns from singleTurn subroutines) — try to
-			// recover from the last completed subroutine's result so the procedure can still complete.
-			const recoveredText =
-				this.procedureAnalyzer?.getLastSubroutineResult(session);
-			if (recoveredText) {
-				log.info(
-					`Recovered result from previous subroutine (subtype: ${resultMessage.subtype}), treating as success for procedure completion`,
-				);
-				// Create a synthetic success result for procedure routing
-				const syntheticResult: SDKResultMessage = {
-					...resultMessage,
-					subtype: "success",
-					result: recoveredText,
-					is_error: false,
-				};
-				await this.handleProcedureCompletion(
-					session,
-					sessionId,
-					syntheticResult,
-				);
-			} else {
-				log.warn(
-					`Error result with no recoverable text (subtype: ${resultMessage.subtype}), posting error to Linear`,
-				);
-				await this.addResultEntry(sessionId, resultMessage);
-			}
-		} else if (resultMessage.subtype !== "success") {
-			// Non-recoverable errors (e.g. stop/abort) should not advance procedures.
 			await this.addResultEntry(sessionId, resultMessage);
 		}
-	}
 
-	private shouldRecoverFromPreviousSubroutine(
-		resultMessage: SDKResultMessage,
-	): boolean {
-		if (resultMessage.subtype === "error_max_turns") {
-			return true;
+		const isChildSession = this.getParentSessionId?.(sessionId);
+		if (
+			isChildSession &&
+			this.resumeParentSession &&
+			resultMessage.subtype === "success"
+		) {
+			await this.handleChildSessionCompletion(sessionId, resultMessage);
 		}
-
-		const errorText = [
-			resultMessage.subtype,
-			...("errors" in resultMessage && Array.isArray(resultMessage.errors)
-				? resultMessage.errors
-				: []),
-			"result" in resultMessage && typeof resultMessage.result === "string"
-				? resultMessage.result
-				: "",
-		]
-			.join(" ")
-			.toLowerCase();
-
-		return (
-			errorText.includes("max turn") ||
-			errorText.includes("turn limit") ||
-			errorText.includes("turns limit")
-		);
 	}
 
 	private consumeStopRequest(linearAgentActivitySessionId: string): boolean {
@@ -470,343 +362,6 @@ export class AgentSessionManager extends EventEmitter {
 
 	requestSessionStop(linearAgentActivitySessionId: string): void {
 		this.stopRequestedSessions.add(linearAgentActivitySessionId);
-	}
-
-	/**
-	 * Handle completion using procedure routing system
-	 */
-	private async handleProcedureCompletion(
-		session: SylasAgentSession,
-		sessionId: string,
-		resultMessage: SDKResultMessage,
-	): Promise<void> {
-		const log = this.sessionLog(sessionId);
-		if (!this.procedureAnalyzer) {
-			throw new Error("ProcedureAnalyzer not available");
-		}
-
-		// Check if error occurred
-		if (resultMessage.subtype !== "success") {
-			log.info(
-				`Subroutine completed with error, not triggering next subroutine`,
-			);
-			return;
-		}
-
-		// Get the runner session ID (Claude, Gemini, Codex, Cursor, or OpenCode)
-		const runnerSessionId =
-			session.claudeSessionId ||
-			session.geminiSessionId ||
-			session.codexSessionId ||
-			session.cursorSessionId ||
-			session.openCodeSessionId;
-		if (!runnerSessionId) {
-			log.error(`No runner session ID found for procedure session`);
-			return;
-		}
-
-		// Check if there's a next subroutine
-		const nextSubroutine = this.procedureAnalyzer.getNextSubroutine(session);
-
-		if (nextSubroutine) {
-			// More subroutines to run - check if current subroutine requires approval
-			const currentSubroutine =
-				this.procedureAnalyzer.getCurrentSubroutine(session);
-
-			if (currentSubroutine?.requiresApproval) {
-				log.info(
-					`Current subroutine "${currentSubroutine.name}" requires approval before proceeding`,
-				);
-
-				// Check if SharedApplicationServer is available
-				if (!this.sharedApplicationServer) {
-					log.error(
-						`SharedApplicationServer not available for approval workflow`,
-					);
-					await this.createErrorActivity(
-						sessionId,
-						"Approval workflow failed: Server not available",
-					);
-					return;
-				}
-
-				// Extract the final result from the completed subroutine
-				const subroutineResult =
-					"result" in resultMessage && resultMessage.result
-						? resultMessage.result
-						: "No result available";
-
-				try {
-					// Register approval request with server
-					const approvalRequest =
-						this.sharedApplicationServer.registerApprovalRequest(sessionId);
-
-					// Post approval elicitation to Linear with auth signal URL
-					const approvalMessage = `The previous step has completed. Please review the result below and approve to continue:\n\n${subroutineResult}`;
-
-					await this.createApprovalElicitation(
-						sessionId,
-						approvalMessage,
-						approvalRequest.url,
-					);
-
-					log.info(`Waiting for approval at URL: ${approvalRequest.url}`);
-
-					// Wait for approval with timeout (30 minutes)
-					const approvalTimeout = 30 * 60 * 1000;
-					const timeoutPromise = new Promise<never>((_, reject) =>
-						setTimeout(
-							() => reject(new Error("Approval timeout")),
-							approvalTimeout,
-						),
-					);
-
-					const { approved, feedback } = await Promise.race([
-						approvalRequest.promise,
-						timeoutPromise,
-					]);
-
-					if (!approved) {
-						log.info(`Approval rejected`);
-						await this.createErrorActivity(
-							sessionId,
-							`Workflow stopped: User rejected approval.${feedback ? `\n\nFeedback: ${feedback}` : ""}`,
-						);
-						return; // Stop workflow
-					}
-
-					log.info(`Approval granted, continuing to next subroutine`);
-
-					// Optionally post feedback as a thought
-					if (feedback) {
-						await this.createThoughtActivity(
-							sessionId,
-							`User feedback: ${feedback}`,
-						);
-					}
-
-					// Continue with advancement (fall through to existing code)
-				} catch (error) {
-					const errorMessage = (error as Error).message;
-					if (errorMessage === "Approval timeout") {
-						log.info(`Approval timed out`);
-						await this.createErrorActivity(
-							sessionId,
-							"Workflow stopped: Approval request timed out after 30 minutes.",
-						);
-					} else {
-						log.error(`Approval request failed:`, error);
-						await this.createErrorActivity(
-							sessionId,
-							`Workflow stopped: Approval request failed - ${errorMessage}`,
-						);
-					}
-					return; // Stop workflow
-				}
-			}
-
-			// Check if current subroutine uses validation loop
-			if (currentSubroutine?.usesValidationLoop) {
-				const handled = await this.handleValidationLoopCompletion(
-					session,
-					sessionId,
-					resultMessage,
-					runnerSessionId,
-					nextSubroutine,
-				);
-				if (handled) {
-					return; // Validation loop took over control flow
-				}
-				// If not handled (validation passed or max retries), continue with normal advancement
-			}
-
-			// Advance procedure state
-			log.info(
-				`Subroutine completed, advancing to next: ${nextSubroutine.name}`,
-			);
-			const subroutineResult =
-				"result" in resultMessage ? resultMessage.result : undefined;
-			this.procedureAnalyzer.advanceToNextSubroutine(
-				session,
-				runnerSessionId,
-				subroutineResult,
-			);
-
-			// Emit event for EdgeWorker to handle subroutine transition
-			// This replaces the callback pattern and allows EdgeWorker to subscribe
-			this.emit("subroutineComplete", {
-				sessionId,
-				session,
-			});
-		} else {
-			// Procedure complete - post final result
-			log.info(`All subroutines completed, posting final result to Linear`);
-			await this.addResultEntry(sessionId, resultMessage);
-
-			// Handle child session completion
-			const isChildSession = this.getParentSessionId?.(sessionId);
-			if (isChildSession && this.resumeParentSession) {
-				await this.handleChildSessionCompletion(sessionId, resultMessage);
-			}
-		}
-	}
-
-	/**
-	 * Handle validation loop completion for subroutines that use usesValidationLoop
-	 * Returns true if the validation loop took over control flow (needs fixer or retry)
-	 * Returns false if validation passed or max retries reached (continue with normal advancement)
-	 */
-	private async handleValidationLoopCompletion(
-		session: SylasAgentSession,
-		sessionId: string,
-		resultMessage: SDKResultMessage,
-		_runnerSessionId: string,
-		_nextSubroutine: { name: string } | null,
-	): Promise<boolean> {
-		const log = this.sessionLog(sessionId);
-		const maxIterations = DEFAULT_VALIDATION_LOOP_CONFIG.maxIterations;
-
-		// Get or initialize validation loop state
-		let validationLoop = session.metadata?.procedure?.validationLoop;
-		if (!validationLoop) {
-			validationLoop = {
-				iteration: 0,
-				inFixerMode: false,
-				attempts: [],
-			};
-		}
-
-		// Check if we're coming back from the fixer
-		if (validationLoop.inFixerMode) {
-			// Fixer completed, now we need to re-run verifications
-			log.info(
-				`Validation fixer completed for iteration ${validationLoop.iteration}, re-running verifications`,
-			);
-
-			// Clear fixer mode flag
-			validationLoop.inFixerMode = false;
-			this.updateValidationLoopState(session, validationLoop);
-
-			// Emit event to re-run verifications
-			this.emit("validationLoopRerun", {
-				sessionId,
-				session,
-				iteration: validationLoop.iteration,
-			});
-
-			return true;
-		}
-
-		// Parse the validation result from the response
-		const resultText =
-			"result" in resultMessage ? resultMessage.result : undefined;
-		const structuredOutput =
-			"structured_output" in resultMessage
-				? (resultMessage as { structured_output?: unknown }).structured_output
-				: undefined;
-
-		const validationResult = parseValidationResult(
-			resultText,
-			structuredOutput,
-		);
-
-		// Record this attempt
-		const newIteration = validationLoop.iteration + 1;
-		validationLoop.iteration = newIteration;
-		validationLoop.attempts.push({
-			iteration: newIteration,
-			pass: validationResult.pass,
-			reason: validationResult.reason,
-			timestamp: Date.now(),
-		});
-
-		log.info(
-			`Validation result for iteration ${newIteration}/${maxIterations}: pass=${validationResult.pass}, reason="${validationResult.reason.substring(0, 100)}..."`,
-		);
-
-		// Update state in session
-		this.updateValidationLoopState(session, validationLoop);
-
-		// Check if validation passed
-		if (validationResult.pass) {
-			log.info(`Validation passed after ${newIteration} iteration(s)`);
-			// Clear validation loop state for next subroutine
-			this.clearValidationLoopState(session);
-			return false; // Continue with normal advancement
-		}
-
-		// Check if we've exceeded max retries
-		if (newIteration >= maxIterations) {
-			log.info(
-				`Validation failed after ${newIteration} iterations, continuing anyway`,
-			);
-			// Post a thought about the failures
-			await this.createThoughtActivity(
-				sessionId,
-				`Validation loop exhausted after ${newIteration} attempts. Last failure: ${validationResult.reason}`,
-			);
-			// Clear validation loop state for next subroutine
-			this.clearValidationLoopState(session);
-			return false; // Continue with normal advancement
-		}
-
-		// Validation failed and we have retries left - run the fixer
-		log.info(
-			`Validation failed, running fixer (iteration ${newIteration}/${maxIterations})`,
-		);
-
-		// Set fixer mode flag
-		validationLoop.inFixerMode = true;
-		this.updateValidationLoopState(session, validationLoop);
-
-		// Render the fixer prompt with context
-		const previousAttempts = validationLoop.attempts.slice(0, -1).map((a) => ({
-			iteration: a.iteration,
-			reason: a.reason,
-		}));
-
-		const fixerPrompt = renderValidationFixerPrompt({
-			failureReason: validationResult.reason,
-			iteration: newIteration,
-			maxIterations,
-			previousAttempts,
-		});
-
-		// Emit event for EdgeWorker to run the fixer
-		this.emit("validationLoopIteration", {
-			sessionId,
-			session,
-			fixerPrompt,
-			iteration: newIteration,
-			maxIterations,
-		});
-
-		return true; // Validation loop took over control flow
-	}
-
-	/**
-	 * Update validation loop state in session metadata
-	 */
-	private updateValidationLoopState(
-		session: SylasAgentSession,
-		validationLoop: ValidationLoopMetadata,
-	): void {
-		if (!session.metadata) {
-			session.metadata = {};
-		}
-		if (!session.metadata.procedure) {
-			return; // No procedure metadata, can't update
-		}
-		session.metadata.procedure.validationLoop = validationLoop;
-	}
-
-	/**
-	 * Clear validation loop state from session metadata
-	 */
-	private clearValidationLoopState(session: SylasAgentSession): void {
-		if (session.metadata?.procedure) {
-			delete session.metadata.procedure.validationLoop;
-		}
 	}
 
 	/**
@@ -948,13 +503,15 @@ export class AgentSessionManager extends EventEmitter {
 		const runnerType =
 			runner?.constructor.name === "OpenCodeRunner"
 				? "opencode"
-				: runner?.constructor.name === "GeminiRunner"
-					? "gemini"
-					: runner?.constructor.name === "CodexRunner"
-						? "codex"
-						: runner?.constructor.name === "CursorRunner"
-							? "cursor"
-							: "claude";
+				: runner?.constructor.name === "CodexRunner"
+					? "codex"
+					: "claude";
+		// TEMPORARILY DISABLED: runner consolidation v2
+		// : runner?.constructor.name === "GeminiRunner"
+		// 	? "gemini"
+		// 	: runner?.constructor.name === "CursorRunner"
+		// 		? "cursor"
+		// 		: "claude";
 
 		// For error results, content may be in errors[] rather than result
 		const content =
@@ -971,13 +528,15 @@ export class AgentSessionManager extends EventEmitter {
 			// Set the appropriate session ID based on runner type
 			...(runnerType === "opencode"
 				? { openCodeSessionId: resultMessage.session_id }
-				: runnerType === "gemini"
-					? { geminiSessionId: resultMessage.session_id }
-					: runnerType === "codex"
-						? { codexSessionId: resultMessage.session_id }
-						: runnerType === "cursor"
-							? { cursorSessionId: resultMessage.session_id }
-							: { claudeSessionId: resultMessage.session_id }),
+				: runnerType === "codex"
+					? { codexSessionId: resultMessage.session_id }
+					: { claudeSessionId: resultMessage.session_id }),
+			// TEMPORARILY DISABLED: runner consolidation v2
+			// : runnerType === "gemini"
+			// 	? { geminiSessionId: resultMessage.session_id }
+			// 	: runnerType === "cursor"
+			// 		? { cursorSessionId: resultMessage.session_id }
+			// 		: { claudeSessionId: resultMessage.session_id }),
 			type: "result",
 			content,
 			metadata: {
@@ -1508,20 +1067,6 @@ export class AgentSessionManager extends EventEmitter {
 						type: "thought",
 						body: entry.content,
 					};
-			}
-
-			// Check if current subroutine has suppressThoughtPosting enabled
-			// If so, suppress thoughts and actions (but still post responses and results)
-			const currentSubroutine =
-				this.procedureAnalyzer?.getCurrentSubroutine(session);
-			if (currentSubroutine?.suppressThoughtPosting) {
-				// Only suppress thoughts and actions, not responses or results
-				if (content.type === "thought" || content.type === "action") {
-					log.debug(
-						`Suppressing ${content.type} posting for subroutine "${currentSubroutine.name}"`,
-					);
-					return; // Don't post to tracker
-				}
 			}
 
 			// Ensure we have an external session ID for activity posting
