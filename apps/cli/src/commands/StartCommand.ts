@@ -1,5 +1,6 @@
 import { getSylasAppUrl } from "sylas-cloudflare-tunnel-client";
 import type { EdgeConfig } from "sylas-core";
+import { OnboardingService } from "../services/OnboardingService.js";
 import { BaseCommand } from "./ICommand.js";
 
 /**
@@ -10,7 +11,7 @@ export class StartCommand extends BaseCommand {
 		try {
 			// Load edge configuration
 			const edgeConfig = this.app.config.load();
-			const repositories = edgeConfig.repositories || [];
+			let repositories = edgeConfig.repositories || [];
 
 			// Check if we're in setup waiting mode (no repositories + SYLAS_SETUP_PENDING flag)
 			if (
@@ -28,6 +29,23 @@ export class StartCommand extends BaseCommand {
 
 				// Keep process alive and wait for configuration
 				return;
+			}
+
+			const isFirstRun = !process.env.LINEAR_CLIENT_ID;
+			if (isFirstRun && repositories.length === 0) {
+				const onboarding = new OnboardingService(this.app);
+				const success = await onboarding.run();
+				if (!success) {
+					this.logger.error("Setup cancelled.");
+					await this.app.shutdown();
+					process.exit(1);
+				}
+
+				const updatedConfig = this.app.config.load();
+				const updatedRepos = updatedConfig.repositories || [];
+				if (updatedRepos.length > 0) {
+					repositories = updatedRepos;
+				}
 			}
 
 			// Check if we're in idle mode (no repositories, post-onboarding)

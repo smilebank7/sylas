@@ -1,25 +1,9 @@
-import { execSync } from "node:child_process";
-import { randomUUID } from "node:crypto";
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import * as readline from "node:readline";
-import {
-	DEFAULT_BASE_BRANCH,
-	DEFAULT_CONFIG_FILENAME,
-	DEFAULT_WORKTREES_DIR,
-	type EdgeConfig,
-} from "sylas-core";
+import { DEFAULT_CONFIG_FILENAME, type EdgeConfig } from "sylas-core";
+import { RepoService } from "../services/RepoService.js";
 import { BaseCommand } from "./ICommand.js";
-
-/**
- * Workspace credentials extracted from existing repository configurations
- */
-interface WorkspaceCredentials {
-	id: string;
-	name: string;
-	token: string;
-	refreshToken?: string;
-}
 
 /**
  * Self-add-repo command - clones a repo and adds it to config.json
@@ -31,6 +15,7 @@ interface WorkspaceCredentials {
  */
 export class SelfAddRepoCommand extends BaseCommand {
 	private rl: readline.Interface | null = null;
+	private repoService = new RepoService(this.app.sylasHome);
 
 	private getReadline(): readline.Interface {
 		if (!this.rl) {
@@ -76,127 +61,30 @@ export class SelfAddRepoCommand extends BaseCommand {
 
 			// Get URL if not provided
 			if (!url) {
-				url = await this.prompt("Repository URL: ");
-				if (!url) {
-					this.logError("URL is required");
-					process.exit(1);
-				}
-			}
-
-			// Extract repo name from URL
-			const repoName = url
-				.split("/")
-				.pop()
-				?.replace(/\.git$/, "");
-			if (!repoName) {
-				this.logError("Could not extract repo name from URL");
-				process.exit(1);
-			}
-
-			// Check for duplicate
-			if (
-				config.repositories.some(
-					(r: EdgeConfig["repositories"][number]) => r.name === repoName,
-				)
-			) {
-				this.logError(`Repository '${repoName}' already exists in config`);
-				process.exit(1);
-			}
-
-			// Find workspaces with Linear credentials
-			const workspaces = new Map<string, WorkspaceCredentials>();
-			for (const repo of config.repositories) {
-				if (
-					repo.linearWorkspaceId &&
-					repo.linearToken &&
-					!workspaces.has(repo.linearWorkspaceId)
-				) {
-					workspaces.set(repo.linearWorkspaceId, {
-						id: repo.linearWorkspaceId,
-						name: repo.linearWorkspaceName || repo.linearWorkspaceId,
-						token: repo.linearToken,
-						refreshToken: repo.linearRefreshToken,
-					});
-				}
-			}
-
-			if (workspaces.size === 0) {
-				this.logError(
-					"No Linear credentials found. Run 'sylas self-auth' first.",
+				url = await this.repoService.promptForRepoUrl((question) =>
+					this.prompt(question),
 				);
-				process.exit(1);
 			}
 
-			// Get workspace
-			let selectedWorkspace: WorkspaceCredentials;
-			const workspaceList = Array.from(workspaces.values());
-
-			if (workspaceList.length === 1) {
-				// Safe: we checked length === 1 above
-				selectedWorkspace = workspaceList[0]!;
-			} else if (workspaceName) {
-				const foundWorkspace = workspaceList.find(
-					(w) => w.name === workspaceName,
-				);
-				if (!foundWorkspace) {
-					this.logError(`Workspace '${workspaceName}' not found`);
-					process.exit(1);
-				}
-				selectedWorkspace = foundWorkspace;
-			} else {
-				console.log("\nAvailable workspaces:");
-				workspaceList.forEach((w, i) => {
-					console.log(`  ${i + 1}. ${w.name}`);
-				});
-				const choice = await this.prompt(
-					`Select workspace [1-${workspaceList.length}]: `,
-				);
-				const idx = parseInt(choice, 10) - 1;
-				if (idx < 0 || idx >= workspaceList.length) {
-					this.logError("Invalid selection");
-					process.exit(1);
-				}
-				// Safe: we validated idx is within bounds above
-				selectedWorkspace = workspaceList[idx]!;
+			if (!url) {
+				throw new Error("URL is required");
 			}
 
-			// Clone the repo
-			const repositoryPath = resolve(this.app.sylasHome, "repos", repoName);
-
-			if (existsSync(repositoryPath)) {
-				console.log(`Repository already exists at ${repositoryPath}`);
-			} else {
-				console.log(`Cloning ${url}...`);
-				try {
-					execSync(`git clone ${url} ${repositoryPath}`, { stdio: "inherit" });
-				} catch {
-					this.logError("Failed to clone repository");
-					process.exit(1);
-				}
-			}
-
-			// Generate UUID and add to config
-			const id = randomUUID();
-
-			config.repositories.push({
-				id,
-				name: repoName,
-				repositoryPath,
-				baseBranch: DEFAULT_BASE_BRANCH,
-				workspaceBaseDir: resolve(this.app.sylasHome, DEFAULT_WORKTREES_DIR),
-				linearWorkspaceId: selectedWorkspace.id,
-				linearWorkspaceName: selectedWorkspace.name,
-				linearToken: selectedWorkspace.token,
-				linearRefreshToken: selectedWorkspace.refreshToken,
-				isActive: true,
+			const result = await this.repoService.cloneAndAddRepo({
+				url,
+				config,
+				configPath,
+				workspaceName,
+				prompt: (question) => this.prompt(question),
 			});
 
-			writeFileSync(configPath, JSON.stringify(config, null, "\t"), "utf-8");
-
-			console.log(`\nAdded: ${repoName}`);
-			console.log(`  ID: ${id}`);
-			console.log(`  Workspace: ${selectedWorkspace.name}`);
+			console.log(`\nAdded: ${result.repoName}`);
+			console.log(`  ID: ${result.id}`);
+			console.log(`  Workspace: ${result.workspace.name}`);
 			process.exit(0);
+		} catch (error) {
+			this.logError((error as Error).message);
+			process.exit(1);
 		} finally {
 			this.cleanup();
 		}
