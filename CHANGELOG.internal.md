@@ -4,6 +4,12 @@ This changelog documents internal development changes, refactors, tooling update
 
 ## [Unreleased]
 
+## [0.2.22] - 2026-02-26
+
+### Runner Pipeline & CLI Fixes
+- Runner packages (opencode-runner, codex-runner, cursor-runner, gemini-runner, simple-agent-runner) moved to optional peerDependencies on edge-worker, loaded dynamically via `RunnerRegistry.ts`. Type shims added in `optional-runner-shims.d.ts`. ([#5](https://github.com/smilebank7/sylas/pull/5))
+- Replaced `open` npm package with native `child_process.exec` utility (`apps/cli/src/utils/openUrl.ts`) using platform-native commands (`open` on macOS, `xdg-open` on Linux) to fix bunx ESM resolution failure with `define-lazy-prop`. ([#6](https://github.com/smilebank7/sylas/pull/6))
+- Fixed CLI tsconfig `include` from `["*.ts", "src/**/*.ts"]` to `["src/**/*.ts"]` to prevent root-level files (vitest.config.ts) from compiling into `dist/`, eliminating the `dist/src/` nested output problem. Updated `bin`, `main`, `types`, `start` script, and `app.ts` package.json resolution path accordingly. ([#6](https://github.com/smilebank7/sylas/pull/6))
 
 ### Bun Migration (LJH-106)
  Migrated package manager from pnpm to Bun across the entire monorepo. Removed `pnpm-workspace.yaml`, `pnpm-lock.yaml`, and `packageManager` field; added `workspaces` and `overrides` to root `package.json`; generated `bun.lock`. ([LJH-106](https://linear.app/leejhin/issue/LJH-106/), [#4](https://github.com/smilebank7/sylas/pull/4))

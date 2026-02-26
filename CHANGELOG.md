@@ -3,31 +3,75 @@
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
-
-### Changed
+## [0.2.22] - 2026-02-26
+ ### Changed
  Migrated from pnpm to Bun as the package manager and from vitest to bun:test as the test runner. All CI, Docker, and dev workflows now use Bun. ([LJH-106](https://linear.app/leejhin/issue/LJH-106/), [#4](https://github.com/smilebank7/sylas/pull/4))
  **v2 Documentation & Branding** — README.md completely rewritten to reflect Sylas as a Cyrus fork with oh-my series multi-agent harnesses (OMO/OMC/OMX). Added architecture diagram, runner selection guide, feature overview, and v2 roadmap. AGENTS.md updated with three-harness architecture, deprecated Gemini/Cursor sections, and current package structure.
-
+ Runner packages (opencode-runner, codex-runner, cursor-runner, gemini-runner, simple-agent-runner) are now optional peer dependencies, loaded dynamically at runtime. Only install the runners you need. ([#5](https://github.com/smilebank7/sylas/pull/5))
+ Slack bot token is now read exclusively from the `SLACK_BOT_TOKEN` environment variable. The `X-Slack-Bot-Token` HTTP header is no longer supported. ([CYPACK-824](https://linear.app/ceedar/issue/CYPACK-824), [#876](https://github.com/smilebank7/sylas/pull/876))
+ Slack agent sessions now run in transient empty directories instead of git worktrees, and subsequent @mentions in the same thread share the same session context. ([CYPACK-815](https://linear.app/ceedar/issue/CYPACK-815), [#868](https://github.com/smilebank7/sylas/pull/868))
+ **Agent and model selectors now work across Claude, Gemini, and Codex** - You can now set runner and model directly in issue descriptions using `[agent=claude|gemini|codex]` and `[model=<model-name>]`. ([#850](https://github.com/smilebank7/sylas/pull/850))
+ **Codex tool activity is now visible in Linear sessions** ([#850](https://github.com/smilebank7/sylas/pull/850))
+ **Codex todo output now renders as proper checklists** ([#850](https://github.com/smilebank7/sylas/pull/850))
+ **Major new feature: Cursor agent harness support** ([CYPACK-804](https://linear.app/ceedar/issue/CYPACK-804), [#858](https://github.com/smilebank7/sylas/pull/858))
+ **Sylas MCP tools now run on the built-in server endpoint with authenticated Codex access** ([CYPACK-817](https://linear.app/ceedar/issue/CYPACK-817), [#870](https://github.com/smilebank7/sylas/pull/870))
 ### Added
-- GitHub PR comment support: Sylas can now be triggered by `@sylasagent` mentions on GitHub pull request comments, creating sessions and posting replies directly on PRs. ([CYPACK-772](https://linear.app/ceedar/issue/CYPACK-772), [#820](https://github.com/smilebank7/sylas/pull/820))
-- Slack integration: Sylas can now receive `@mention` webhooks from Slack channels and threads, enabling Slack as a new platform for triggering agent sessions. ([CYPACK-807](https://linear.app/ceedar/issue/CYPACK-807), [#861](https://github.com/smilebank7/sylas/pull/861))
+ GitHub PR comment support: Sylas can now be triggered by `@sylasagent` mentions on GitHub pull request comments, creating sessions and posting replies directly on PRs. ([CYPACK-772](https://linear.app/ceedar/issue/CYPACK-772), [#820](https://github.com/smilebank7/sylas/pull/820))
+ Slack integration: Sylas can now receive `@mention` webhooks from Slack channels and threads, enabling Slack as a new platform for triggering agent sessions. ([CYPACK-807](https://linear.app/ceedar/issue/CYPACK-807), [#861](https://github.com/smilebank7/sylas/pull/861))
+ **`bunx sylas-ai` no longer fails with ESM resolution errors** — Replaced the `open` npm package with a lightweight native `child_process` utility for opening URLs, fixing `ERR_MODULE_NOT_FOUND` errors caused by bunx's inability to resolve transitive ESM dependencies (`define-lazy-prop`). ([#6](https://github.com/smilebank7/sylas/pull/6))
+ **CLI build output no longer duplicates under `dist/src/`** — Fixed tsconfig `include` to compile only `src/**/*.ts`, preventing root-level files from creating a nested `dist/src/` directory structure in the published package. ([#6](https://github.com/smilebank7/sylas/pull/6))
+ Summary subroutines now properly disable all tools including MCP tools like Linear's create_comment ([#808](https://github.com/smilebank7/sylas/pull/808))
+ Procedures no longer fail when a subroutine exits with an error. Sylas now recovers by using the last successful subroutine's result. ([#818](https://github.com/smilebank7/sylas/pull/818))
+ **Codex usage limit errors now display full message in Linear** ([CYPACK-804](https://linear.app/ceedar/issue/CYPACK-804), [#858](https://github.com/smilebank7/sylas/pull/858))
+ **Cursor project .cursor/cli.json is now backed up and restored** ([CYPACK-804](https://linear.app/ceedar/issue/CYPACK-804), [#858](https://github.com/smilebank7/sylas/pull/858))
+ **Cursor API key no longer in CLI args or logs** ([CYPACK-804](https://linear.app/ceedar/issue/CYPACK-804), [#858](https://github.com/smilebank7/sylas/pull/858))
+ **Cursor completed todos now display as checked in Linear** ([CYPACK-804](https://linear.app/ceedar/issue/CYPACK-804), [#858](https://github.com/smilebank7/sylas/pull/858))
+### Packages
 
-### Changed
-- Slack bot token is now read exclusively from the `SLACK_BOT_TOKEN` environment variable. The `X-Slack-Bot-Token` HTTP header is no longer supported. ([CYPACK-824](https://linear.app/ceedar/issue/CYPACK-824), [#876](https://github.com/smilebank7/sylas/pull/876))
-- Slack agent sessions now run in transient empty directories instead of git worktrees, and subsequent @mentions in the same thread share the same session context. ([CYPACK-815](https://linear.app/ceedar/issue/CYPACK-815), [#868](https://github.com/smilebank7/sylas/pull/868))
-- **Agent and model selectors now work across Claude, Gemini, and Codex** - You can now set runner and model directly in issue descriptions using `[agent=claude|gemini|codex]` and `[model=<model-name>]`. This is not Codex-only: selectors apply to all supported runners. `[agent=...]` explicitly selects the runner, `[model=...]` selects the model and can infer runner family, and description tags take precedence over labels. ([#850](https://github.com/smilebank7/sylas/pull/850))
-- **Codex tool activity is now visible in Linear sessions** - Codex runs now emit tool lifecycle activity (including command execution, file edits, web fetch/search, MCP tool calls, and todo updates) so activity streams show execution details instead of only final output. ([#850](https://github.com/smilebank7/sylas/pull/850))
-- **Codex todo output now renders as proper checklists** - Todo items are now formatted as markdown task lists (`- [ ]` and `- [x]`) for correct checklist rendering in Linear. ([#850](https://github.com/smilebank7/sylas/pull/850))
-- **Major new feature: Cursor agent harness support** - Sylas now supports Cursor as a first-class agent option. To use it, set `[agent=cursor]` in the issue description or apply a `cursor` issue label; either selector runs end-to-end with the Cursor runner and posts the final response back to the issue thread. Cursor runs now map Sylas tool permissions into project-level Cursor CLI permissions, pre-enable configured MCP servers before run, and refresh permissions between subroutines so permission changes take effect without restarting the issue flow. Cursor sandbox is enabled by default for tool execution isolation; set `SYLAS_SANDBOX=disabled` to disable. Before each run, Sylas validates that the installed `cursor-agent` version matches the tested version; a mismatch posts an error to Linear. Set `SYLAS_CURSOR_AGENT_VERSION` to your installed version to override. Assembled cursor-agent CLI args are now logged to console and session log files for debugging. Codex default runner model is now `gpt-5.3-codex` (configurable via `codexDefaultModel`). ([CYPACK-804](https://linear.app/ceedar/issue/CYPACK-804), [#858](https://github.com/smilebank7/sylas/pull/858))
-- **Sylas MCP tools now run on the built-in server endpoint with authenticated Codex access** - Sylas tools are now served via Fastify MCP on the same configured server port, sylas-tools MCP requests require `Authorization: Bearer <SYLAS_API_KEY>`, and Codex now forwards configured MCP HTTP auth headers correctly so authenticated MCP servers initialize successfully. ([CYPACK-817](https://linear.app/ceedar/issue/CYPACK-817), [#870](https://github.com/smilebank7/sylas/pull/870))
+#### sylas-cloudflare-tunnel-client
+ sylas-cloudflare-tunnel-client@0.2.22
 
-### Fixed
-- Summary subroutines now properly disable all tools including MCP tools like Linear's create_comment ([#808](https://github.com/smilebank7/sylas/pull/808))
-- Procedures no longer fail when a subroutine exits with an error (e.g., hitting the max turns limit). Sylas now recovers by using the last successful subroutine's result, allowing the workflow to continue to completion instead of stopping mid-procedure ([#818](https://github.com/smilebank7/sylas/pull/818))
-- **Codex usage limit errors now display full message in Linear** - When Codex hits usage limits or other turn.failed errors, the actual error message is now posted to Linear agent activity instead of a generic message. ([CYPACK-804](https://linear.app/ceedar/issue/CYPACK-804), [#858](https://github.com/smilebank7/sylas/pull/858))
-- **Cursor project .cursor/cli.json is now backed up and restored** - CursorRunner no longer overwrites the project's `.cursor/cli.json`. It temporarily renames the existing file before writing Sylas permissions, then restores the original when the session ends. ([CYPACK-804](https://linear.app/ceedar/issue/CYPACK-804), [#858](https://github.com/smilebank7/sylas/pull/858))
-- **Cursor API key no longer in CLI args or logs** - The Cursor API key is now passed only via the `CURSOR_API_KEY` environment variable, so it never appears in spawn logs or terminal output. The `--force` option has also been removed from cursor-agent invocations. ([CYPACK-804](https://linear.app/ceedar/issue/CYPACK-804), [#858](https://github.com/smilebank7/sylas/pull/858))
-- **Cursor completed todos now display as checked in Linear** - Cursor API uses `TODO_STATUS_COMPLETED` for completed todo items; the formatter now recognizes this so completed items render as `- [x]` instead of `- [ ]` in Linear activity. ([CYPACK-804](https://linear.app/ceedar/issue/CYPACK-804), [#858](https://github.com/smilebank7/sylas/pull/858))
+#### sylas-config-updater
+ sylas-config-updater@0.2.22
+
+#### sylas-linear-event-transport
+ sylas-linear-event-transport@0.2.22
+
+#### sylas-claude-runner
+ sylas-claude-runner@0.2.22
+
+#### sylas-core
+ sylas-core@0.2.22
+
+#### sylas-opencode-runner
+ sylas-opencode-runner@0.2.22
+
+#### sylas-codex-runner
+ sylas-codex-runner@0.2.22
+
+#### sylas-cursor-runner
+ sylas-cursor-runner@0.2.22
+
+#### sylas-simple-agent-runner
+ sylas-simple-agent-runner@0.2.22
+
+#### sylas-gemini-runner
+ sylas-gemini-runner@0.2.22
+
+#### sylas-mcp-tools
+ sylas-mcp-tools@0.2.22
+
+#### sylas-github-event-transport
+ sylas-github-event-transport@0.2.22
+
+#### sylas-slack-event-transport
+ sylas-slack-event-transport@0.2.22
+
+#### sylas-edge-worker
+ sylas-edge-worker@0.2.22
+
+#### sylas-ai (CLI)
+ sylas-ai@0.2.22
 
 ## [0.2.21] - 2026-02-09
 

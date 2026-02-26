@@ -1,6 +1,6 @@
 {
 	"name": "sylas-claude-runner",
-	"version": "0.2.21",
+	"version": "0.2.22",
 	"description": "Claude CLI execution wrapper for Sylas",
 	"type": "module",
 	"main": "dist/index.js",

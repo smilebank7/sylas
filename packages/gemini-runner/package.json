@@ -1,6 +1,6 @@
 {
 	"name": "sylas-gemini-runner",
-	"version": "0.2.21",
+	"version": "0.2.22",
 	"description": "Gemini CLI process spawning and management for Sylas",
 	"type": "module",
 	"main": "dist/index.js",
